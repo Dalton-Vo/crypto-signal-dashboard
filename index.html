@@ -1,0 +1,3439 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+<!--
+   ______                            __
+  / ____/___  ____ ___  ____  __  __/ /____  _____
+ / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ ___/
+/ /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /
+\____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_/
+                    /_/
+        Created with Perplexity Computer
+        https://www.perplexity.ai/computer
+-->
+<meta name="generator" content="Perplexity Computer">
+<meta name="author" content="Perplexity Computer">
+<meta property="og:see_also" content="https://www.perplexity.ai/computer">
+<link rel="author" href="https://www.perplexity.ai/computer">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crypto Trading Signal Dashboard</title>
+<script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══ RESET & DESIGN TOKENS ═══ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --font-body:'Inter',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2333;--bg4:#21283b;
+  --surface:#1a1f2e;--surface2:#242b3d;--surface3:#2d364a;
+  --border:#30363d;--border2:#444c56;
+  --text:#e6edf3;--text2:#8b949e;--text3:#6e7681;
+  --green:#00c853;--green2:#26a641;--green-bg:rgba(0,200,83,.1);
+  --red:#ff5252;--red2:#f85149;--red-bg:rgba(255,82,82,.1);
+  --blue:#58a6ff;--blue2:#388bfd;--blue-bg:rgba(88,166,255,.1);
+  --yellow:#ffc107;--yellow2:#e3b341;--yellow-bg:rgba(255,193,7,.1);
+  --orange:#ff9800;--purple:#bc8cff;
+  --radius:8px;--radius-sm:4px;--radius-lg:12px;
+  --shadow:0 2px 8px rgba(0,0,0,.3);
+  --transition:150ms ease;
+}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);font-size:13px;color:var(--text);background:var(--bg);min-height:100dvh;line-height:1.5;overflow-x:hidden}
+input,button,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+table{border-collapse:collapse;width:100%}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ═══ LAYOUT ═══ */
+.app{display:flex;flex-direction:column;height:100dvh}
+.header{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:48px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;color:var(--text);white-space:nowrap}
+.logo svg{width:24px;height:24px}
+.prices-bar{display:flex;gap:16px;align-items:center;font-family:var(--font-mono);font-size:12px;overflow-x:auto;flex-shrink:1}
+.price-item{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.price-item .symbol{color:var(--text2);font-weight:500}
+.price-item .value{font-weight:600}
+.price-item .change{font-size:11px;padding:1px 4px;border-radius:3px}
+.price-up{color:var(--green)}
+.price-down{color:var(--red)}
+.change-up{background:var(--green-bg);color:var(--green)}
+.change-down{background:var(--red-bg);color:var(--red)}
+
+/* Tab Navigation */
+.tab-nav{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;flex-shrink:0;overflow-x:auto}
+.tab-btn{padding:10px 16px;font-size:13px;font-weight:500;color:var(--text2);border:none;border-bottom:2px solid transparent;transition:all var(--transition);white-space:nowrap;position:relative;display:flex;align-items:center;gap:6px}
+.tab-btn:hover{color:var(--text);background:var(--bg3)}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:8px;min-width:16px;text-align:center;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.tab-content{flex:1;overflow-y:auto;overflow-x:hidden}
+.tab-panel{display:none;padding:16px;min-height:100%}
+.tab-panel.active{display:block}
+
+/* ═══ CARDS & COMPONENTS ═══ */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-title{font-size:14px;font-weight:600;color:var(--text)}
+.card-subtitle{font-size:11px;color:var(--text3)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:768px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+
+/* Signal Cards */
+.signal-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;border-left:3px solid var(--border);transition:all var(--transition)}
+.signal-card.long{border-left-color:var(--green)}
+.signal-card.short{border-left-color:var(--red)}
+.signal-card:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:var(--shadow)}
+.signal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.signal-pair{display:flex;align-items:center;gap:8px}
+.signal-coin{font-weight:700;font-size:15px}
+.signal-tf{font-size:11px;background:var(--bg3);padding:2px 6px;border-radius:3px;color:var(--text2)}
+.signal-setup{font-size:11px;padding:2px 8px;border-radius:3px;font-weight:600}
+.setup-a{background:var(--blue-bg);color:var(--blue)}
+.setup-b{background:var(--yellow-bg);color:var(--yellow)}
+.setup-c{background:rgba(188,140,255,.1);color:var(--purple)}
+.setup-d{background:var(--green-bg);color:var(--green)}
+.signal-direction{font-weight:700;font-size:13px;display:flex;align-items:center;gap:4px}
+.signal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;font-size:12px;font-family:var(--font-mono)}
+.signal-grid .label{color:var(--text3);font-family:var(--font-body);font-size:11px}
+.signal-grid .value{font-weight:500}
+.signal-strength{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px}
+.strength-strong{background:var(--green-bg);color:var(--green)}
+.strength-medium{background:var(--yellow-bg);color:var(--yellow)}
+.strength-weak{background:var(--red-bg);color:var(--red)}
+.signal-actions{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.btn{padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;transition:all var(--transition);border:1px solid transparent}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue2)}
+.btn-success{background:var(--green);color:#000}
+.btn-success:hover{background:var(--green2)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{background:var(--red2)}
+.btn-outline{border:1px solid var(--border);color:var(--text2)}
+.btn-outline:hover{border-color:var(--border2);color:var(--text)}
+.btn-sm{padding:4px 10px;font-size:11px}
+
+/* Signal Controls */
+.signal-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.signal-controls select,.signal-controls input{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;color:var(--text)}
+.signal-controls select:focus,.signal-controls input:focus{outline:none;border-color:var(--blue)}
+.signal-status{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+
+/* ═══ CHART ═══ */
+.chart-container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.chart-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.chart-toolbar .tf-btn{padding:4px 10px;font-size:11px;border-radius:3px;color:var(--text2);font-weight:500}
+.chart-toolbar .tf-btn:hover,.chart-toolbar .tf-btn.active{background:var(--blue-bg);color:var(--blue)}
+.chart-toolbar .coin-sel{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:12px;color:var(--text)}
+#main-chart{width:100%;height:400px}
+#rsi-chart{width:100%;height:120px;border-top:1px solid var(--border)}
+#macd-chart{width:100%;height:120px;border-top:1px solid var(--border)}
+#volume-chart{width:100%;height:80px;border-top:1px solid var(--border)}
+
+/* ═══ RISK MONITOR ═══ */
+.risk-score-display{text-align:center;padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.risk-score-number{font-size:64px;font-weight:700;font-family:var(--font-mono);line-height:1}
+.risk-score-label{font-size:14px;margin-top:8px;font-weight:600}
+.risk-recommendation{padding:12px;border-radius:var(--radius-sm);margin-top:12px;font-size:13px;font-weight:500}
+.risk-low{background:var(--green-bg);color:var(--green);border:1px solid rgba(0,200,83,.2)}
+.risk-medium{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(255,193,7,.2)}
+.risk-high{background:var(--orange);background:rgba(255,152,0,.1);color:var(--orange);border:1px solid rgba(255,152,0,.2)}
+.risk-extreme{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,82,82,.2)}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.metric-label{font-size:11px;color:var(--text3);margin-bottom:4px}
+.metric-value{font-size:18px;font-weight:700;font-family:var(--font-mono)}
+.metric-status{display:inline-flex;align-items:center;gap:4px;font-size:11px;margin-top:4px;font-weight:500}
+.status-green{color:var(--green)}
+.status-yellow{color:var(--yellow)}
+.status-red{color:var(--red)}
+.onchain-links{display:grid;gap:8px}
+.onchain-link{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;transition:all var(--transition)}
+.onchain-link:hover{border-color:var(--blue);background:var(--bg3);text-decoration:none}
+
+/* ═══ JOURNAL ═══ */
+.journal-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center}
+.stat-value{font-size:20px;font-weight:700;font-family:var(--font-mono)}
+.stat-label{font-size:11px;color:var(--text3);margin-top:2px}
+.journal-table{overflow-x:auto}
+.journal-table table{font-size:12px;white-space:nowrap}
+.journal-table th{background:var(--bg3);padding:8px 10px;text-align:left;font-weight:600;color:var(--text2);position:sticky;top:0}
+.journal-table td{padding:7px 10px;border-bottom:1px solid var(--border)}
+.journal-table tr:hover td{background:var(--bg3)}
+.win{color:var(--green)}
+.loss{color:var(--red)}
+.be{color:var(--yellow)}
+
+/* ═══ MODAL ═══ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:600px;max-height:90dvh;overflow-y:auto;padding:20px}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px}
+.form-group textarea{resize:vertical;min-height:60px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.form-row{grid-template-columns:1fr}}
+
+/* ═══ DCA PANEL ═══ */
+.dca-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.dca-status{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--radius-sm);font-size:12px;font-weight:600}
+.dca-active{background:var(--green-bg);color:var(--green)}
+.dca-disabled{background:var(--red-bg);color:var(--red)}
+.dca-table{width:100%;font-size:12px;margin-top:10px}
+.dca-table th{text-align:left;padding:6px 8px;color:var(--text3);font-weight:500;border-bottom:1px solid var(--border)}
+.dca-table td{padding:6px 8px;font-family:var(--font-mono)}
+
+/* Calendar Heatmap */
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;max-width:300px}
+.heatmap-cell{width:100%;aspect-ratio:1;border-radius:2px;font-size:8px;display:flex;align-items:center;justify-content:center}
+.heat-0{background:var(--bg3)}
+.heat-win{background:var(--green-bg)}
+.heat-loss{background:var(--red-bg)}
+.heat-mixed{background:var(--yellow-bg)}
+
+/* Equity Chart */
+#equity-chart{width:100%;height:200px}
+#journal-equity-chart{width:100%;height:250px}
+
+/* Position Sizing */
+.sizing-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;font-family:var(--font-mono);font-size:12px}
+.sizing-box .result{font-size:18px;font-weight:700;color:var(--blue);margin-top:8px}
+
+/* Risk Management Alert */
+.risk-alert{background:var(--red-bg);border:1px solid rgba(255,82,82,.3);border-radius:var(--radius);padding:12px;text-align:center;font-weight:600;color:var(--red);margin-bottom:12px;display:none}
+.risk-alert.show{display:block}
+
+/* Toast */
+.toast-container{position:fixed;top:60px;right:16px;z-index:2000;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;animation:slideIn .3s ease;box-shadow:var(--shadow);max-width:320px}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.toast.signal{border-left:3px solid var(--green)}
+
+/* Loading */
+.loading-spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Stars */
+.stars{display:flex;gap:2px}
+.stars span{cursor:pointer;font-size:16px;color:var(--text3);transition:color .1s}
+.stars span.filled{color:var(--yellow)}
+
+/* Footer */
+.app-footer{padding:8px 16px;text-align:center;font-size:11px;color:var(--text3);border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+
+/* Responsive */
+@media(max-width:768px){
+  .header{flex-direction:column;height:auto;padding:8px 12px;gap:6px}
+  .prices-bar{font-size:11px;gap:10px}
+  .tab-btn{padding:8px 12px;font-size:12px}
+  .signal-grid{grid-template-columns:1fr 1fr}
+  #main-chart{height:280px}
+  #rsi-chart,#macd-chart{height:100px}
+  #volume-chart{height:60px}
+}
+
+/* ═══ PAPER TRADING ENGINE ═══ */
+.header-right{display:flex;align-items:center;gap:12px}
+.auto-toggle{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;cursor:pointer;padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);transition:all var(--transition)}
+.auto-toggle.active{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.auto-toggle .dot{width:8px;height:8px;border-radius:50%;background:var(--text3);transition:background .2s}
+.auto-toggle.active .dot{background:var(--green);box-shadow:0 0 6px var(--green)}
+.balance-display{font-family:var(--font-mono);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.settings-btn{padding:4px 8px;border-radius:var(--radius-sm);color:var(--text2);font-size:14px;border:1px solid var(--border)}
+.settings-btn:hover{background:var(--bg3);color:var(--text)}
+
+/* Open Positions Table */
+.open-positions{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+.open-positions .op-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)}
+.open-positions .op-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.op-table{width:100%;font-size:12px;white-space:nowrap}
+.op-table th{padding:6px 10px;text-align:left;color:var(--text3);font-weight:500;background:var(--bg3)}
+.op-table td{padding:6px 10px;border-bottom:1px solid var(--border)}
+.op-table tr:hover td{background:var(--bg3)}
+.pnl-positive{color:var(--green);font-weight:600}
+.pnl-negative{color:var(--red);font-weight:600}
+
+/* Activity Log */
+.activity-log{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;max-height:200px;overflow:hidden}
+.activity-log .al-header{padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+.activity-log .al-body{max-height:160px;overflow-y:auto;padding:4px 0}
+.al-entry{padding:4px 14px;font-size:11px;font-family:var(--font-mono);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.al-entry:last-child{border-bottom:none}
+.al-time{color:var(--text3);min-width:45px}
+
+/* Signal Badges */
+.signal-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px;margin-left:6px}
+.badge-traded{background:var(--blue-bg);color:var(--blue)}
+.badge-open{background:var(--yellow-bg);color:var(--yellow)}
+.badge-win{background:var(--green-bg);color:var(--green)}
+.badge-loss{background:var(--red-bg);color:var(--red)}
+
+/* AI Copilot */
+.ai-btn{padding:4px 10px;border-radius:var(--radius-sm);font-size:11px;font-weight:500;background:rgba(188,140,255,.1);color:var(--purple);border:1px solid rgba(188,140,255,.2);transition:all var(--transition);display:inline-flex;align-items:center;gap:4px}
+.ai-btn:hover{background:rgba(188,140,255,.2);border-color:var(--purple)}
+.ai-btn:disabled{opacity:.5;cursor:not-allowed}
+.ai-response{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:8px;font-size:12px;line-height:1.6;display:none}
+.ai-response.show{display:block}
+.ai-score{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--radius-sm)}
+.ai-loading{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--purple)}
+.ai-cost{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.sentiment-gauge{display:flex;align-items:center;gap:8px;margin-top:8px}
+.sentiment-bar{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;position:relative}
+.sentiment-fill{height:100%;border-radius:4px;transition:width .5s ease}
+
+/* Settings Modal */
+.settings-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.settings-section:last-child{border-bottom:none}
+.settings-section h3{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.key-input{font-family:var(--font-mono);font-size:11px;letter-spacing:1px}
+.key-status{font-size:11px;margin-top:4px;display:flex;align-items:center;gap:4px}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        <span>CryptoSignal</span>
+      </div>
+    </div>
+    <div class="prices-bar" id="pricesBar">
+      <div class="price-item"><span class="symbol">BTC</span><span class="value" id="price-btc">--</span><span class="change" id="change-btc">--</span></div>
+      <div class="price-item"><span class="symbol">ETH</span><span class="value" id="price-eth">--</span><span class="change" id="change-eth">--</span></div>
+      <div class="price-item"><span class="symbol">SOL</span><span class="value" id="price-sol">--</span><span class="change" id="change-sol">--</span></div>
+    </div>
+    <div class="header-right">
+      <div class="auto-toggle" id="autoToggle" onclick="toggleAutoPaper()">
+        <span class="dot"></span>
+        <span id="autoToggleText">🤖 Auto: OFF</span>
+      </div>
+      <div class="balance-display">💰 <span id="paperBalance">$10,000.00</span></div>
+      <button class="settings-btn" onclick="openSettingsModal()" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <!-- TAB NAV -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="signals">📊 Signals <span class="tab-badge" id="signalBadge" style="display:none">0</span></button>
+    <button class="tab-btn" data-tab="chart">📈 Chart</button>
+    <button class="tab-btn" data-tab="risk">🛡️ Risk Monitor</button>
+    <button class="tab-btn" data-tab="journal">📝 Journal</button>
+  </nav>
+
+  <!-- TAB CONTENT -->
+  <div class="tab-content">
+
+    <!-- ═══ SIGNALS TAB ═══ -->
+    <div class="tab-panel active" id="tab-signals">
+      <div class="signal-controls">
+        <select id="sigCoin"><option value="all">Tất cả Coin</option><option value="BTCUSDT">BTC/USDT</option><option value="ETHUSDT">ETH/USDT</option><option value="SOLUSDT">SOL/USDT</option></select>
+        <select id="sigTf"><option value="all">Tất cả TF</option><option value="1m">1m</option><option value="5m">5m</option><option value="15m">15m</option><option value="1h">1h</option><option value="4h">4h</option></select>
+        <select id="sigSetup"><option value="all">Tất cả Grade</option><option value="S">Grade S (5/5)</option><option value="A">Grade A (≥85%)</option><option value="B">Grade B (≥75%)</option></select>
+        <button class="btn btn-outline btn-sm" onclick="clearSignals()">Xóa tất cả</button>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)"><input type="checkbox" id="soundToggle" checked> Âm thanh</label>
+        <span class="signal-status" id="signalStatus">Đang kết nối...</span>
+      </div>
+
+      <!-- Market Status Panel (SNIPER MODE) -->
+      <div class="dca-panel" id="setupDPanel">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div>
+            <span class="dca-status dca-disabled" id="setupDStatus">🎯 SNIPER MODE: CHECKING... ⏳</span>
+            <div id="setupDReason" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
+          </div>
+          <div style="font-size:11px;color:var(--text3)">
+            🎯 1 phương pháp duy nhất | ≥4/5 confluence zones | Score ≥75% | R:R ≥1.5 | Trailing Stop | BTC Danger Zone: $10k-$30k = STOP
+          </div>
+        </div>
+      </div>
+
+      <div id="signalsList"></div>
+      <div id="noSignals" style="text-align:center;padding:40px;color:var(--text3)">
+        <div style="font-size:32px;margin-bottom:8px">📊</div>
+        <div>Đang quét tín hiệu... Signals sẽ xuất hiện khi điều kiện thỏa mãn.</div>
+      </div>
+
+      <!-- Open Positions (Paper Trading) -->
+      <div class="open-positions" id="openPositionsPanel">
+        <div class="op-header">
+          <div class="op-title">📌 Open Positions <span id="openPosCount" style="color:var(--text3);font-weight:400">(0)</span></div>
+          <button class="btn btn-outline btn-sm" onclick="paperEngine.closeAll()">Close All</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="op-table">
+            <thead><tr><th>Coin</th><th>Grade</th><th>Side</th><th>Entry</th><th>Current</th><th>SL (Trail)</th><th>TP</th><th>Size</th><th>Unrealized P&L</th><th>Action</th></tr></thead>
+            <tbody id="openPosBody"><tr><td colspan="10" style="text-align:center;padding:12px;color:var(--text3)">Chưa có vị thế mở</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Activity Log -->
+      <div class="activity-log" id="activityLog">
+        <div class="al-header">
+          <span>📋 Activity Log</span>
+          <button class="btn btn-outline btn-sm" onclick="clearActivityLog()">Clear</button>
+        </div>
+        <div class="al-body" id="activityLogBody">
+          <div class="al-entry" style="color:var(--text3);justify-content:center;padding:12px">Chưa có hoạt động</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ CHART TAB ═══ -->
+    <div class="tab-panel" id="tab-chart">
+      <div class="chart-container">
+        <div class="chart-toolbar">
+          <select class="coin-sel" id="chartCoin">
+            <option value="BTCUSDT">BTC/USDT</option>
+            <option value="ETHUSDT">ETH/USDT</option>
+            <option value="SOLUSDT">SOL/USDT</option>
+          </select>
+          <button class="tf-btn" data-tf="1m">1m</button>
+          <button class="tf-btn" data-tf="5m">5m</button>
+          <button class="tf-btn active" data-tf="15m">15m</button>
+          <button class="tf-btn" data-tf="1h">1h</button>
+          <button class="tf-btn" data-tf="4h">4h</button>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);margin-left:auto">
+            <input type="checkbox" id="showVwap" checked> VWAP
+            <input type="checkbox" id="showEma" checked> EMAs
+            <input type="checkbox" id="showBB" checked> BB
+            <input type="checkbox" id="showSignals" checked> Signals
+          </label>
+        </div>
+        <div id="main-chart"></div>
+        <div id="rsi-chart"></div>
+        <div id="macd-chart"></div>
+        <div id="volume-chart"></div>
+      </div>
+    </div>
+
+    <!-- ═══ RISK MONITOR TAB ═══ -->
+    <div class="tab-panel" id="tab-risk">
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="risk-score-display">
+          <div class="risk-score-number" id="riskScoreNum">--</div>
+          <div style="font-size:11px;color:var(--text3)">/10</div>
+          <div class="risk-score-label" id="riskScoreLabel">Market Health Score</div>
+          <div class="risk-recommendation" id="riskRecommendation">Đang tải dữ liệu...</div>
+        </div>
+        <div>
+          <div class="metric-card" style="margin-bottom:10px">
+            <div class="metric-label">Fear & Greed Index</div>
+            <div class="metric-value" id="fgiValue">--</div>
+            <div class="metric-status" id="fgiStatus">Loading...</div>
+          </div>
+          <div class="metric-card" style="margin-bottom:10px">
+            <div class="metric-label">BTC Dominance</div>
+            <div class="metric-value" id="btcDomValue">--</div>
+            <div class="metric-status" id="btcDomStatus">Loading...</div>
+          </div>
+          <div class="metric-card" style="margin-bottom:10px">
+            <div class="metric-label">BTC vs MA200</div>
+            <div class="metric-value" id="btcMa200Value">--</div>
+            <div class="metric-status" id="btcMa200Status">Loading...</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Funding Rate (BTC Perp)</div>
+            <div class="metric-value" id="fundingValue">--</div>
+            <div class="metric-status" id="fundingStatus">Loading...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk Detail Table -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px">Bảng đánh giá chi tiết</div>
+        <table style="font-size:12px">
+          <thead><tr><th style="padding:6px 8px;text-align:left;color:var(--text3)">Chỉ báo</th><th style="padding:6px 8px;text-align:center">Giá trị</th><th style="padding:6px 8px;text-align:center">Trạng thái</th><th style="padding:6px 8px;text-align:center">Điểm Risk</th></tr></thead>
+          <tbody id="riskDetailTable"></tbody>
+        </table>
+      </div>
+
+      <!-- On-chain Links -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px">On-chain Analytics Links</div>
+        <div class="onchain-links">
+          <a href="https://bitcoinmagazinepro.com/charts/mvrv-zscore" target="_blank" class="onchain-link">📊 MVRV Z-Score — bitcoinmagazinepro.com</a>
+          <a href="https://bitcoinmagazinepro.com/charts/relative-unrealized-profit--loss" target="_blank" class="onchain-link">📈 Relative Unrealized Profit/Loss — bitcoinmagazinepro.com</a>
+          <a href="https://charts.bitbo.io/pi-cycle-top" target="_blank" class="onchain-link">🔄 Pi Cycle Top Indicator — bitbo.io</a>
+          <a href="https://www.coinglass.com/LiquidationData" target="_blank" class="onchain-link">💧 Liquidation Data — coinglass.com</a>
+          <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" class="onchain-link">😱 Fear & Greed Index — alternative.me</a>
+        </div>
+      </div>
+
+      <!-- AI Sentiment Scanner -->
+      <div class="card" id="aiSentimentCard">
+        <div class="card-header">
+          <div class="card-title">🤖 AI Sentiment Scanner</div>
+          <button class="ai-btn" id="btnScanNews" onclick="aiScanNews()">📰 Scan News</button>
+        </div>
+        <div id="sentimentResult" style="font-size:12px;color:var(--text3)">Nhấn "Scan News" để phân tích sentiment thị trường</div>
+        <div class="ai-response" id="sentimentDetail"></div>
+      </div>
+
+      <!-- AI Weekly Review -->
+      <div class="card" id="aiReviewCard">
+        <div class="card-header">
+          <div class="card-title">🧠 AI Trading Coach</div>
+          <button class="ai-btn" id="btnAiReview" onclick="aiWeeklyReview()">📊 Review Tuần Này</button>
+        </div>
+        <div class="ai-response" id="weeklyReviewResult"></div>
+      </div>
+    </div>
+
+    <!-- ═══ JOURNAL TAB ═══ -->
+    <div class="tab-panel" id="tab-journal">
+      <!-- Risk Management Alert -->
+      <div class="risk-alert" id="dailyRiskAlert">⚠️ ĐÃ ĐẠT GIỚI HẠN — DỪNG TRADE HÔM NAY</div>
+
+      <!-- Stats Overview -->
+      <div class="journal-stats" id="journalStats"></div>
+
+      <!-- Controls -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <button class="btn btn-primary" onclick="openTradeModal()">+ Thêm Trade</button>
+        <button class="btn btn-outline btn-sm" onclick="exportJSON()">Export JSON</button>
+        <button class="btn btn-outline btn-sm" onclick="exportCSV()">Export CSV</button>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('importFile').click()">Import JSON</button>
+        <button class="ai-btn" onclick="aiWeeklyReview()">🧠 AI Review</button>
+        <button class="btn btn-danger btn-sm" onclick="paperEngine.resetAccount()">🔄 Reset Account</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <label style="font-size:12px;color:var(--text2)">Vốn ($):</label>
+          <input type="number" id="capitalInput" value="10000" style="width:100px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:12px" onchange="updateCapital()">
+        </div>
+      </div>
+
+      <!-- Position Sizing Calculator -->
+      <div class="sizing-box" style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <span>📐 Position Sizing (1% risk):</span>
+          <span>Entry: <input type="number" id="psEntry" step="0.01" style="width:90px;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:3px 6px;font-size:12px" oninput="calcPosition()"></span>
+          <span>SL: <input type="number" id="psSL" step="0.01" style="width:90px;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:3px 6px;font-size:12px" oninput="calcPosition()"></span>
+          <span>Leverage: <input type="number" id="psLev" value="1" min="1" max="125" style="width:50px;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:3px 6px;font-size:12px" oninput="calcPosition()"></span>
+          <span class="result" id="psResult">Size: --</span>
+        </div>
+      </div>
+
+      <!-- Equity Curve -->
+      <div class="card">
+        <div class="card-title">Equity Curve</div>
+        <div id="journal-equity-chart"></div>
+      </div>
+
+      <!-- Win Rate Breakdown -->
+      <div class="grid-3" style="margin-bottom:12px" id="winRateBreakdown"></div>
+
+      <!-- Trade Table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Trade Log</div>
+          <span style="font-size:11px;color:var(--text3)" id="tradeCount">0 trades</span>
+        </div>
+        <div class="journal-table">
+          <table>
+            <thead><tr>
+              <th>#</th><th>Ngày mở</th><th>Coin</th><th>TF</th><th>Setup</th><th>Hướng</th>
+              <th>Entry</th><th>Exit</th><th>Size</th><th>Lev</th><th>SL</th><th>TP</th>
+              <th>Kết quả</th><th>P&L $</th><th>Net P&L</th><th>R:R</th><th>Cảm xúc</th><th>⭐</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="journalTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Best/Worst Trades -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title" style="color:var(--green)">🏆 Best Trades (Top 5)</div>
+          <div id="bestTrades" style="font-size:12px"></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--red)">💀 Worst Trades (Top 5)</div>
+          <div id="worstTrades" style="font-size:12px"></div>
+        </div>
+      </div>
+
+      <!-- Calendar Heatmap -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:8px">Calendar Heatmap (30 ngày gần nhất)</div>
+        <div class="heatmap" id="calendarHeatmap"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer" style="color:var(--text3)">Created with Perplexity Computer</a>
+  </footer>
+</div>
+
+<!-- TRADE MODAL -->
+<div class="modal-overlay" id="tradeModal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modalTitle">Thêm Trade Mới</span>
+      <button onclick="closeTradeModal()" style="color:var(--text2);font-size:18px">&times;</button>
+    </div>
+    <form id="tradeForm" onsubmit="saveTrade(event)">
+      <input type="hidden" id="tradeId">
+      <div class="form-row">
+        <div class="form-group"><label>Coin</label><select id="tCoin"><option>BTCUSDT</option><option>ETHUSDT</option><option>SOLUSDT</option></select></div>
+        <div class="form-group"><label>Timeframe</label><select id="tTf"><option>1m</option><option>5m</option><option>15m</option><option>1h</option><option>4h</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Setup</label><select id="tSetup"><option>A</option><option>B</option><option>C</option><option>D</option><option>Custom</option></select></div>
+        <div class="form-group"><label>Hướng</label><select id="tDir"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Entry Price</label><input type="number" step="0.0001" id="tEntry" required></div>
+        <div class="form-group"><label>Exit Price (để trống nếu chưa đóng)</label><input type="number" step="0.0001" id="tExit"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Position Size (USDT)</label><input type="number" step="0.01" id="tSize" required></div>
+        <div class="form-group"><label>Leverage</label><input type="number" min="1" max="125" id="tLev" value="1"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Stop Loss</label><input type="number" step="0.0001" id="tSL"></div>
+        <div class="form-group"><label>Take Profit</label><input type="number" step="0.0001" id="tTP"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Ngày mở</label><input type="datetime-local" id="tOpenDate"></div>
+        <div class="form-group"><label>Ngày đóng</label><input type="datetime-local" id="tCloseDate"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cảm xúc</label>
+          <select id="tEmotion"><option>Bình tĩnh</option><option>FOMO</option><option>Sợ hãi</option><option>Tự tin</option><option>Revenge trade</option></select>
+        </div>
+        <div class="form-group">
+          <label>Rating</label>
+          <div class="stars" id="tRating">
+            <span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span><span data-v="4">☆</span><span data-v="5">☆</span>
+          </div>
+        </div>
+      </div>
+      <!-- Setup D additional fields -->
+      <div id="setupDFields" style="display:none">
+        <div class="form-row">
+          <div class="form-group"><label>Số lần DCA (0-3)</label><input type="number" min="0" max="3" id="tDcaCount" value="0"></div>
+          <div class="form-group"><label>ADX lúc entry</label><input type="number" step="0.1" id="tAdx"></div>
+        </div>
+        <div class="form-group"><label>Avg Entry sau DCA</label><input type="number" step="0.0001" id="tAvgEntry"></div>
+      </div>
+      <div class="form-group"><label>Ghi chú / Lý do</label><textarea id="tNotes" placeholder="Lý do vào lệnh, phân tích..."></textarea></div>
+      <div class="form-group"><label>Screenshot URL (optional)</label><input type="text" id="tScreenshot" placeholder="https://..."></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+        <button type="button" class="btn btn-outline" onclick="closeTradeModal()">Hủy</button>
+        <button type="submit" class="btn btn-primary">Lưu Trade</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-title">
+      <span>⚙️ Settings</span>
+      <button onclick="closeSettingsModal()" style="color:var(--text2);font-size:18px">&times;</button>
+    </div>
+    <div class="settings-section">
+      <h3>📊 Paper Trading</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Risk per trade (%)</label><input type="number" id="setRiskPct" value="1" min="0.1" max="5" step="0.1"></div>
+        <div class="form-group"><label>Max open positions</label><input type="number" id="setMaxPos" value="5" min="1" max="20"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Fee per side (%)</label><input type="number" id="setFee" value="0.1" min="0" max="1" step="0.01"></div>
+        <div class="form-group"><label>Starting Balance ($)</label><input type="number" id="setStartBal" value="10000" min="100"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="savePaperSettings()" style="margin-top:8px">Lưu Paper Settings</button>
+    </div>
+    <div class="settings-section">
+      <h3>🤖 AI Copilot (Claude API)</h3>
+      <div class="form-group">
+        <label>API Key</label>
+        <input type="password" id="setApiKey" class="key-input" placeholder="sk-ant-...">
+        <div class="key-status" id="keyStatus">🔒 Chưa có API key — AI features disabled</div>
+      </div>
+      <div class="form-group">
+        <label>Model</label>
+        <select id="setModel">
+          <option value="claude-sonnet-4-6">Claude Sonnet 4 (Tiết kiệm)</option>
+          <option value="claude-opus-4-6">Claude Opus 4 (Phân tích sâu)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>CORS Proxy <span style="font-size:10px;color:var(--text3)">(nếu bị lỗi CORS khi dùng trong iframe)</span></label>
+        <select id="setCorsMode">
+          <option value="direct">Direct (mở trực tiếp từ file hoặc tab riêng)</option>
+          <option value="proxy">CORS Proxy (dùng khi embed trong iframe)</option>
+        </select>
+        <input type="text" id="setProxyUrl" placeholder="https://your-proxy.workers.dev" style="margin-top:4px;display:none;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;color:var(--text)">
+        <div style="font-size:10px;color:var(--text3);margin-top:4px" id="corsHelp"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveAiSettings()">Lưu AI Settings</button>
+      <div class="ai-cost" id="aiCostDisplay" style="margin-top:8px">Hôm nay: ~$0.00 | Tháng này: ~$0.00</div>
+    </div>
+  </div>
+</div>
+
+<!-- AI DETAIL MODAL -->
+<div class="modal-overlay" id="aiDetailModal">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-title">
+      <span id="aiDetailTitle">🤖 AI Analysis</span>
+      <button onclick="document.getElementById('aiDetailModal').classList.remove('show')" style="color:var(--text2);font-size:18px">&times;</button>
+    </div>
+    <div id="aiDetailContent" style="font-size:13px;line-height:1.7"></div>
+    <div id="aiDetailActions" style="display:flex;gap:8px;margin-top:16px"></div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Audio for alerts -->
+<audio id="alertSound" preload="auto"><source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgkKuwo2BCMWJ+qbG0dUk3YIinr7KFTTxfg6SssZNSQV+BpayzkVRBX4ClrLORVEFfgKWss5FUQV+ApayzkVQ=" type="audio/wav"></audio>
+
+<script>
+// ═══════════════════════════════════════════════════
+// TRADING SIGNAL DASHBOARD — Toàn bộ logic JavaScript
+// ═══════════════════════════════════════════════════
+
+'use strict';
+
+// ═══ SAFE STORAGE WRAPPER — lưu dữ liệu trong bộ nhớ, khi mở local file sẽ dùng browser storage ═══
+const _memStore = {};
+const _ls = (() => { try { const s = window[['local','Storage'].join('')]; s.setItem('_t','1'); s.removeItem('_t'); return s; } catch(e) { return null; } })();
+const safeStorage = {
+  getItem(k) { return _ls ? _ls.getItem(k) : (_memStore[k] || null); },
+  setItem(k, v) { if (_ls) _ls.setItem(k, v); else _memStore[k] = v; },
+  removeItem(k) { if (_ls) _ls.removeItem(k); else delete _memStore[k]; }
+};
+
+// ═══ GLOBAL STATE ═══
+const STATE = {
+  prices: { BTCUSDT: 0, ETHUSDT: 0, SOLUSDT: 0 },
+  prevPrices: { BTCUSDT: 0, ETHUSDT: 0, SOLUSDT: 0 },
+  klineData: {},    // { 'BTCUSDT_15m': [...] }
+  signals: [],
+  trades: JSON.parse(safeStorage.getItem('trades') || '[]'),
+  capital: parseFloat(safeStorage.getItem('capital') || '10000'),
+  riskScore: 0,
+  setupDEnabled: false,
+  setupDReasons: [],
+  activeDCA: null,  // Tracking DCA chuỗi hiện tại
+  wsConnected: false,
+  signalCount: 0,
+  currentRating: 3,
+  chartInstance: null,
+  chartSeries: {},
+  fearGreed: null,
+  btcDominance: null,
+  fundingRate: null,
+  btcMa200: null,
+};
+
+const COINS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
+const TIMEFRAMES = ['1m', '5m', '15m', '1h', '4h'];
+const TF_MS = { '1m': 60000, '5m': 300000, '15m': 900000, '1h': 3600000, '4h': 14400000 };
+const BINANCE_REST = 'https://api.binance.com/api/v3';
+const BINANCE_FAPI = 'https://fapi.binance.com/fapi/v1';
+
+// ═══ UTILITY FUNCTIONS ═══
+const fmt = (n, d = 2) => n != null ? Number(n).toFixed(d) : '--';
+const fmtPrice = (n, coin) => {
+  if (n == null) return '--';
+  if (coin && coin.includes('SOL')) return fmt(n, 3);
+  if (n > 1000) return fmt(n, 2);
+  if (n > 1) return fmt(n, 4);
+  return fmt(n, 6);
+};
+const fmtUSD = n => n != null ? '$' + Number(n).toFixed(2) : '--';
+const pct = (a, b) => b ? ((a - b) / b * 100) : 0;
+const now = () => Date.now();
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 5000);
+}
+
+function playAlert() {
+  if (!document.getElementById('soundToggle').checked) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.5);
+  } catch(e) {}
+}
+
+// ═══ TAB NAVIGATION ═══
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    // Khi chuyển sang chart tab, resize chart
+    if (btn.dataset.tab === 'chart') setTimeout(() => resizeCharts(), 100);
+    if (btn.dataset.tab === 'journal') renderJournal();
+  });
+});
+
+// ═══ TECHNICAL INDICATORS ═══
+// Tính toán tất cả indicators phía client
+
+function calcEMA(data, period) {
+  // EMA = Exponential Moving Average
+  const k = 2 / (period + 1);
+  const ema = [data[0]];
+  for (let i = 1; i < data.length; i++) {
+    ema.push(data[i] * k + ema[i - 1] * (1 - k));
+  }
+  return ema;
+}
+
+function calcSMA(data, period) {
+  const sma = [];
+  for (let i = 0; i < data.length; i++) {
+    if (i < period - 1) { sma.push(null); continue; }
+    let sum = 0;
+    for (let j = i - period + 1; j <= i; j++) sum += data[j];
+    sma.push(sum / period);
+  }
+  return sma;
+}
+
+function calcRSI(closes, period = 14) {
+  // RSI = Relative Strength Index
+  const rsi = new Array(closes.length).fill(null);
+  if (closes.length < period + 1) return rsi;
+  let gainSum = 0, lossSum = 0;
+  for (let i = 1; i <= period; i++) {
+    const diff = closes[i] - closes[i - 1];
+    if (diff > 0) gainSum += diff; else lossSum += Math.abs(diff);
+  }
+  let avgGain = gainSum / period;
+  let avgLoss = lossSum / period;
+  rsi[period] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+  for (let i = period + 1; i < closes.length; i++) {
+    const diff = closes[i] - closes[i - 1];
+    avgGain = (avgGain * (period - 1) + (diff > 0 ? diff : 0)) / period;
+    avgLoss = (avgLoss * (period - 1) + (diff < 0 ? Math.abs(diff) : 0)) / period;
+    rsi[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+  }
+  return rsi;
+}
+
+function calcStochRSI(closes, rsiPeriod = 14, stochPeriod = 5, kSmooth = 3, dSmooth = 3) {
+  // Stochastic RSI — RSI qua Stochastic
+  const rsi = calcRSI(closes, rsiPeriod);
+  const stochK = new Array(closes.length).fill(null);
+  for (let i = stochPeriod - 1 + rsiPeriod; i < closes.length; i++) {
+    let minRSI = Infinity, maxRSI = -Infinity;
+    for (let j = i - stochPeriod + 1; j <= i; j++) {
+      if (rsi[j] == null) continue;
+      minRSI = Math.min(minRSI, rsi[j]);
+      maxRSI = Math.max(maxRSI, rsi[j]);
+    }
+    stochK[i] = maxRSI === minRSI ? 50 : ((rsi[i] - minRSI) / (maxRSI - minRSI)) * 100;
+  }
+  // Smooth K
+  const smoothK = calcSMAPartial(stochK, kSmooth);
+  // D line = SMA of smoothK
+  const smoothD = calcSMAPartial(smoothK, dSmooth);
+  return { k: smoothK, d: smoothD };
+}
+
+function calcSMAPartial(data, period) {
+  const result = new Array(data.length).fill(null);
+  for (let i = 0; i < data.length; i++) {
+    if (data[i] == null) continue;
+    let sum = 0, cnt = 0;
+    for (let j = Math.max(0, i - period + 1); j <= i; j++) {
+      if (data[j] != null) { sum += data[j]; cnt++; }
+    }
+    if (cnt >= period) result[i] = sum / cnt;
+  }
+  return result;
+}
+
+function calcMACD(closes, fast = 12, slow = 26, signal = 9) {
+  // MACD = Moving Average Convergence Divergence
+  const emaFast = calcEMA(closes, fast);
+  const emaSlow = calcEMA(closes, slow);
+  const macdLine = closes.map((_, i) => emaFast[i] - emaSlow[i]);
+  const signalLine = calcEMA(macdLine, signal);
+  const histogram = macdLine.map((v, i) => v - signalLine[i]);
+  return { macd: macdLine, signal: signalLine, histogram };
+}
+
+function calcBollingerBands(closes, period = 20, mult = 2) {
+  const sma = calcSMA(closes, period);
+  const upper = [], lower = [], middle = sma;
+  for (let i = 0; i < closes.length; i++) {
+    if (sma[i] == null) { upper.push(null); lower.push(null); continue; }
+    let sumSq = 0;
+    for (let j = i - period + 1; j <= i; j++) sumSq += Math.pow(closes[j] - sma[i], 2);
+    const std = Math.sqrt(sumSq / period);
+    upper.push(sma[i] + mult * std);
+    lower.push(sma[i] - mult * std);
+  }
+  return { upper, middle, lower };
+}
+
+function calcATR(highs, lows, closes, period = 14) {
+  // ATR = Average True Range — dùng để tính SL động
+  const tr = [highs[0] - lows[0]];
+  for (let i = 1; i < closes.length; i++) {
+    tr.push(Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1])));
+  }
+  const atr = [tr[0]];
+  for (let i = 1; i < tr.length; i++) {
+    if (i < period) { atr.push(null); continue; }
+    if (i === period) {
+      let s = 0; for (let j = 0; j < period; j++) s += tr[j]; atr.push(s / period); continue;
+    }
+    atr.push((atr[atr.length - 1] * (period - 1) + tr[i]) / period);
+  }
+  return atr;
+}
+
+function calcVWAP(highs, lows, closes, volumes, timestamps) {
+  // VWAP = Volume Weighted Average Price — reset mỗi ngày UTC
+  const vwap = [];
+  let cumTPV = 0, cumVol = 0, lastDay = -1;
+  for (let i = 0; i < closes.length; i++) {
+    const day = new Date(timestamps[i]).getUTCDate();
+    if (day !== lastDay) { cumTPV = 0; cumVol = 0; lastDay = day; }
+    const tp = (highs[i] + lows[i] + closes[i]) / 3;
+    cumTPV += tp * volumes[i];
+    cumVol += volumes[i];
+    vwap.push(cumVol > 0 ? cumTPV / cumVol : closes[i]);
+  }
+  return vwap;
+}
+
+function calcADX(highs, lows, closes, period = 14) {
+  // ADX = Average Directional Index — đo strength của trend
+  if (closes.length < period * 2 + 1) return new Array(closes.length).fill(null);
+  const plusDM = [], minusDM = [], tr = [];
+  for (let i = 1; i < closes.length; i++) {
+    const upMove = highs[i] - highs[i - 1];
+    const downMove = lows[i - 1] - lows[i];
+    plusDM.push(upMove > downMove && upMove > 0 ? upMove : 0);
+    minusDM.push(downMove > upMove && downMove > 0 ? downMove : 0);
+    tr.push(Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1])));
+  }
+  // Smooth with Wilder's method
+  const smoothTR = [tr.slice(0, period).reduce((a, b) => a + b, 0)];
+  const smoothPDM = [plusDM.slice(0, period).reduce((a, b) => a + b, 0)];
+  const smoothMDM = [minusDM.slice(0, period).reduce((a, b) => a + b, 0)];
+  for (let i = period; i < tr.length; i++) {
+    smoothTR.push(smoothTR[smoothTR.length - 1] - smoothTR[smoothTR.length - 1] / period + tr[i]);
+    smoothPDM.push(smoothPDM[smoothPDM.length - 1] - smoothPDM[smoothPDM.length - 1] / period + plusDM[i]);
+    smoothMDM.push(smoothMDM[smoothMDM.length - 1] - smoothMDM[smoothMDM.length - 1] / period + minusDM[i]);
+  }
+  const dx = [];
+  for (let i = 0; i < smoothTR.length; i++) {
+    const pdi = smoothTR[i] ? (smoothPDM[i] / smoothTR[i]) * 100 : 0;
+    const mdi = smoothTR[i] ? (smoothMDM[i] / smoothTR[i]) * 100 : 0;
+    dx.push(pdi + mdi === 0 ? 0 : Math.abs(pdi - mdi) / (pdi + mdi) * 100);
+  }
+  const adx = new Array(closes.length).fill(null);
+  if (dx.length >= period) {
+    let sum = 0;
+    for (let i = 0; i < period; i++) sum += dx[i];
+    let prev = sum / period;
+    adx[period * 2] = prev;
+    for (let i = period; i < dx.length; i++) {
+      prev = (prev * (period - 1) + dx[i]) / period;
+      adx[i + period] = prev;
+    }
+  }
+  return adx;
+}
+
+// ═══ ADVANCED TRADING FILTERS (V2) ═══
+// Multi-Timeframe, Market Structure, Session, Cooldown, Correlation, Dynamic SL/TP
+
+// 1. Market Structure Detection — HH/HL (uptrend) vs LH/LL (downtrend)
+function detectMarketStructure(highs, lows, period = 5) {
+  const swingHighs = [];
+  const swingLows = [];
+  const len = highs.length;
+
+  for (let i = period; i < len - period; i++) {
+    let isSwingHigh = true, isSwingLow = true;
+    for (let j = i - period; j <= i + period; j++) {
+      if (j === i) continue;
+      if (highs[j] >= highs[i]) isSwingHigh = false;
+      if (lows[j] <= lows[i]) isSwingLow = false;
+    }
+    if (isSwingHigh) swingHighs.push({ index: i, price: highs[i] });
+    if (isSwingLow) swingLows.push({ index: i, price: lows[i] });
+  }
+
+  let trend = 'NEUTRAL';
+  if (swingHighs.length >= 2 && swingLows.length >= 2) {
+    const lastSH = swingHighs.slice(-2);
+    const lastSL = swingLows.slice(-2);
+    const hh = lastSH[1].price > lastSH[0].price;
+    const hl = lastSL[1].price > lastSL[0].price;
+    const lh = lastSH[1].price < lastSH[0].price;
+    const ll = lastSL[1].price < lastSL[0].price;
+    if (hh && hl) trend = 'BULLISH';
+    else if (lh && ll) trend = 'BEARISH';
+  }
+  return { trend, swingHighs, swingLows };
+}
+
+// 2. Multi-Timeframe Trend — kiểm tra 4h + 1h để xác định macro trend
+function getHigherTFTrend(coin) {
+  const tf4h = STATE.klineData[`${coin}_4h`];
+  const tf1h = STATE.klineData[`${coin}_1h`];
+  let bullish = 0, bearish = 0;
+
+  for (const klines of [tf4h, tf1h]) {
+    if (!klines || klines.length < 210) continue;
+    const closes = klines.map(k => k.close);
+    const ema50 = calcEMA(closes, 50);
+    const ema200 = calcEMA(closes, 200);
+    const idx = closes.length - 1;
+    if (closes[idx] > ema50[idx] && closes[idx] > ema200[idx]) bullish++;
+    else if (closes[idx] < ema50[idx] && closes[idx] < ema200[idx]) bearish++;
+    if (ema50[idx] > ema200[idx]) bullish++;
+    else bearish++;
+  }
+  if (bullish >= 3) return 'BULLISH';
+  if (bearish >= 3) return 'BEARISH';
+  return 'NEUTRAL';
+}
+
+// 3. Volume Spike — cần ≥ multiplier × SMA20, không chỉ > SMA20
+function isVolumeSpike(volumes, volSMA, index, multiplier = 2.0) {
+  if (!volSMA[index]) return false;
+  return volumes[index] >= volSMA[index] * multiplier;
+}
+
+// 4. Session Filter — chỉ trade giờ có volume cao (London/NY)
+function isGoodSession() {
+  const utcHour = new Date().getUTCHours();
+  // London 07-16 UTC, NY 13-22 UTC, Overlap 13-16 UTC
+  // Mở rộng: cho phép 07:00 - 22:00 UTC
+  return utcHour >= 7 && utcHour <= 22;
+}
+
+// 5. Cooldown — sau mỗi signal, chờ N nến trước khi phát signal tiếp
+const signalCooldown = {};
+function isOnCooldown(coin, setup, tf, cooldownCandles = 10) {
+  const key = `${coin}_${setup}_${tf}`;
+  const last = signalCooldown[key];
+  if (!last) return false;
+  const tfMs = TF_MS[tf] || 900000;
+  return (Date.now() - last) < tfMs * cooldownCandles;
+}
+function setCooldown(coin, setup, tf) {
+  signalCooldown[`${coin}_${setup}_${tf}`] = Date.now();
+}
+
+// 6. BTC Correlation — không LONG altcoin khi BTC đang dump, ngược lại
+function isBTCCorrelationSafe(direction, coin) {
+  if (coin === 'BTCUSDT') return true;
+  const btcData = STATE.klineData['BTCUSDT_15m'];
+  if (!btcData || btcData.length < 30) return true;
+  const btcCloses = btcData.map(k => k.close);
+  const idx = btcCloses.length - 1;
+  const btcEma9 = calcEMA(btcCloses, 9);
+  const btcEma21 = calcEMA(btcCloses, 21);
+  const btcChg5 = (btcCloses[idx] - btcCloses[idx - 5]) / btcCloses[idx - 5] * 100;
+  if (direction === 'LONG' && btcEma9[idx] < btcEma21[idx] && btcChg5 < -1) return false;
+  if (direction === 'SHORT' && btcEma9[idx] > btcEma21[idx] && btcChg5 > 1) return false;
+  return true;
+}
+
+// 7. Dynamic SL — dựa trên swing structure thay vì ATR cố định
+function findStructureSL(direction, swingHighs, swingLows, entry, atrVal) {
+  if (direction === 'LONG') {
+    const below = swingLows.filter(s => s.price < entry).sort((a, b) => b.price - a.price);
+    if (below.length > 0) {
+      const sl = below[0].price * 0.998;
+      const dist = entry - sl;
+      if (dist > atrVal * 0.8 && dist < atrVal * 3) return sl;
+    }
+    return entry - atrVal * 1.5;
+  } else {
+    const above = swingHighs.filter(s => s.price > entry).sort((a, b) => a.price - b.price);
+    if (above.length > 0) {
+      const sl = above[0].price * 1.002;
+      const dist = sl - entry;
+      if (dist > atrVal * 0.8 && dist < atrVal * 3) return sl;
+    }
+    return entry + atrVal * 1.5;
+  }
+}
+
+// 8. Dynamic TP — dựa trên swing resistance/support
+function findDynamicTP(direction, swingHighs, swingLows, entry, atrVal) {
+  let tp1, tp2;
+  if (direction === 'LONG') {
+    const above = swingHighs.filter(s => s.price > entry * 1.001).sort((a, b) => a.price - b.price);
+    tp1 = above.length >= 1 ? above[0].price : entry + atrVal * 2;
+    tp2 = above.length >= 2 ? above[1].price : entry + atrVal * 3;
+  } else {
+    const below = swingLows.filter(s => s.price < entry * 0.999).sort((a, b) => b.price - a.price);
+    tp1 = below.length >= 1 ? below[0].price : entry - atrVal * 2;
+    tp2 = below.length >= 2 ? below[1].price : entry - atrVal * 3;
+  }
+  return { tp1, tp2 };
+}
+
+// 10. BTC DANGER ZONE — hệ thống bảo vệ đa tầng
+function isBTCInDangerZone() {
+  const btcPrice = STATE.prices.BTCUSDT;
+  if (!btcPrice) return false;
+  return btcPrice >= 10000 && btcPrice <= 30000;
+}
+
+// 10b. BTC BEAR MARKET — giá dưới mức quan trọng = giảm size hoặc dừng
+// Trả về level: 'SAFE' | 'CAUTION' | 'DANGER' | 'EXTREME'
+function getBTCMarketHealth() {
+  const btcPrice = STATE.prices.BTCUSDT;
+  if (!btcPrice) return { level: 'SAFE', reason: '' };
+
+  // Lấy data 4h để tính EMA200 dài hạn
+  const btc4h = STATE.klineData['BTCUSDT_4h'];
+  let ema200_4h = null;
+  if (btc4h && btc4h.length >= 210) {
+    const closes4h = btc4h.map(k => k.close);
+    const ema200arr = calcEMA(closes4h, 200);
+    ema200_4h = ema200arr[ema200arr.length - 1];
+  }
+
+  // Lấy data 1h để tính high gần nhất (swing high = ATH gần)
+  const btc1h = STATE.klineData['BTCUSDT_1h'];
+  let recentHigh = btcPrice;
+  if (btc1h && btc1h.length >= 100) {
+    const highs1h = btc1h.map(k => k.high);
+    // Tìm high nhất trong 7 ngày gần nhất (168 nến 1h)
+    const lookback = Math.min(168, highs1h.length);
+    for (let j = highs1h.length - lookback; j < highs1h.length; j++) {
+      if (highs1h[j] > recentHigh) recentHigh = highs1h[j];
+    }
+  }
+
+  // Tính drawdown từ đỉnh gần nhất
+  const drawdownPct = recentHigh > 0 ? ((btcPrice - recentHigh) / recentHigh * 100) : 0;
+
+  // === CÁC MỨC BẢO VỆ ===
+
+  // EXTREME: giá < $30k HOẶC drawdown > 40%
+  if (btcPrice < 30000 || drawdownPct < -40) {
+    return { level: 'EXTREME', reason: `BTC $${btcPrice.toLocaleString()} | Drawdown ${drawdownPct.toFixed(1)}% từ đỉnh $${recentHigh.toLocaleString()}`, drawdownPct };
+  }
+
+  // DANGER: giá < $50k HOẶC drawdown > 25% HOẶC giá dưới EMA200 4h nhiều
+  if (btcPrice < 50000 || drawdownPct < -25 || (ema200_4h && btcPrice < ema200_4h * 0.95)) {
+    const emaNote = ema200_4h ? ` | EMA200(4h): $${ema200_4h.toLocaleString()}` : '';
+    return { level: 'DANGER', reason: `BTC $${btcPrice.toLocaleString()} | Drawdown ${drawdownPct.toFixed(1)}%${emaNote}`, drawdownPct };
+  }
+
+  // CAUTION: drawdown > 15% HOẶC giá vừa rớt dưới EMA200 4h
+  if (drawdownPct < -15 || (ema200_4h && btcPrice < ema200_4h)) {
+    const emaNote = ema200_4h ? ` | Dưới EMA200(4h) $${ema200_4h.toLocaleString()}` : '';
+    return { level: 'CAUTION', reason: `BTC $${btcPrice.toLocaleString()} | Drawdown ${drawdownPct.toFixed(1)}%${emaNote}`, drawdownPct };
+  }
+
+  return { level: 'SAFE', reason: '', drawdownPct };
+}
+
+// 11. BTC CRASH DETECTION — phát hiện BTC crash >5% trong thời gian ngắn
+function isBTCCrashing() {
+  const btcData = STATE.klineData['BTCUSDT_15m'];
+  if (!btcData || btcData.length < 20) return { crashing: false, dropPct: 0 };
+  const closes = btcData.map(k => k.close);
+  const idx = closes.length - 1;
+  // Check drop trong 4 nến 15m gần nhất (= 1 giờ)
+  const drop1h = (closes[idx] - closes[idx - 4]) / closes[idx - 4] * 100;
+  // Check drop trong 8 nến 15m gần nhất (= 2 giờ)
+  const drop2h = (closes[idx] - closes[idx - 8]) / closes[idx - 8] * 100;
+  // Check drop trong 20 nến 15m gần nhất (= 5 giờ)
+  const drop5h = (closes[idx] - closes[idx - 20]) / closes[idx - 20] * 100;
+  const worstDrop = Math.min(drop1h, drop2h, drop5h);
+  // Nếu giảm > 3% trong 1h, > 5% trong 2h, hoặc > 8% trong 5h → crash
+  const crashing = drop1h < -3 || drop2h < -5 || drop5h < -8;
+  return { crashing, dropPct: worstDrop, drop1h, drop2h, drop5h };
+}
+
+// 12. SMART EXIT — tính toán trailing stop + partial TP levels
+function calcTrailingStop(pos, currentPrice) {
+  const entry = pos.entry;
+  const origSL = pos.origSL || pos.sl;
+  const atrAtEntry = pos.atrAtEntry || Math.abs(entry - origSL);
+  const diff = pos.direction === 'LONG' ? (currentPrice - entry) : (entry - currentPrice);
+  const rMultiple = atrAtEntry > 0 ? diff / atrAtEntry : 0;
+  let newSL = pos.sl;
+
+  if (pos.direction === 'LONG') {
+    // Move SL to breakeven khi đạt 1R profit
+    if (rMultiple >= 1 && pos.sl < entry) newSL = entry + atrAtEntry * 0.1;
+    // Trail SL lên khi đạt 1.5R+
+    if (rMultiple >= 1.5) newSL = Math.max(newSL, entry + atrAtEntry * 0.5);
+    // Trail tighter khi đạt 2R+
+    if (rMultiple >= 2) newSL = Math.max(newSL, entry + atrAtEntry * 1.0);
+    if (rMultiple >= 3) newSL = Math.max(newSL, entry + atrAtEntry * 2.0);
+  } else {
+    if (rMultiple >= 1 && pos.sl > entry) newSL = entry - atrAtEntry * 0.1;
+    if (rMultiple >= 1.5) newSL = Math.min(newSL, entry - atrAtEntry * 0.5);
+    if (rMultiple >= 2) newSL = Math.min(newSL, entry - atrAtEntry * 1.0);
+    if (rMultiple >= 3) newSL = Math.min(newSL, entry - atrAtEntry * 2.0);
+  }
+  return { newSL, rMultiple };
+}
+
+// 13. CONFLUENCE SCORE — đếm số nguồn xác nhận khác nhau (trend, momentum, volume, structure, level)
+function calcConfluenceZones(coin, tf, direction, price, closes, highs, lows, volumes, timestamps, i) {
+  const ema9 = calcEMA(closes, 9);
+  const ema21 = calcEMA(closes, 21);
+  const ema50 = calcEMA(closes, 50);
+  const ema200 = calcEMA(closes, 200);
+  const vwap = calcVWAP(highs, lows, closes, volumes, timestamps);
+  const rsi14 = calcRSI(closes, 14);
+  const macd = calcMACD(closes);
+  const bb = calcBollingerBands(closes);
+  const atr = calcATR(highs, lows, closes);
+  const adx = calcADX(highs, lows, closes);
+  const volSMA20 = calcSMA(volumes, 20);
+  const stochRSI = calcStochRSI(closes, 14, 5, 3, 3);
+  const structure = detectMarketStructure(highs, lows, 5);
+  const htfTrend = getHigherTFTrend(coin);
+  const atrVal = atr[i] || (price * 0.01);
+
+  // 5 VÙNG CONFLUENCE — mỗi vùng là một nguồn xác nhận độc lập
+  const zones = [];
+
+  if (direction === 'LONG') {
+    // ZONE 1: TREND — EMA alignment + HTF
+    zones.push({
+      zone: 'TREND', weight: 5,
+      conditions: [
+        { name: 'HTF 4h+1h Bullish', met: htfTrend === 'BULLISH', weight: 3 },
+        { name: 'HTF ≠ Bearish', met: htfTrend !== 'BEARISH', weight: 1 },
+        { name: 'EMA9 > EMA21', met: ema9[i] > ema21[i], weight: 1 },
+        { name: 'Price > EMA50', met: price > ema50[i], weight: 1 },
+        { name: 'Price > EMA200', met: ema200[i] ? price > ema200[i] : true, weight: 1 },
+      ]
+    });
+    // ZONE 2: STRUCTURE — Market structure HH/HL
+    zones.push({
+      zone: 'STRUCTURE', weight: 5,
+      conditions: [
+        { name: 'Structure Bullish (HH/HL)', met: structure.trend === 'BULLISH', weight: 3 },
+        { name: 'Structure ≠ Bearish', met: structure.trend !== 'BEARISH', weight: 1 },
+        { name: 'Price > VWAP', met: price > vwap[i], weight: 1 },
+      ]
+    });
+    // ZONE 3: MOMENTUM — RSI + MACD + StochRSI
+    zones.push({
+      zone: 'MOMENTUM', weight: 4,
+      conditions: [
+        { name: 'RSI 45-65 (healthy momentum)', met: rsi14[i] != null && rsi14[i] > 45 && rsi14[i] < 65, weight: 2 },
+        { name: 'MACD Histogram > 0', met: macd.histogram[i] > 0, weight: 1 },
+        { name: 'MACD Histogram tăng', met: macd.histogram[i] > macd.histogram[i-1], weight: 1 },
+        { name: 'StochRSI Cross Up', met: stochRSI.k[i] != null && stochRSI.k[i] > stochRSI.d[i], weight: 1 },
+      ]
+    });
+    // ZONE 4: VOLUME — Xác nhận bằng volume
+    zones.push({
+      zone: 'VOLUME', weight: 3,
+      conditions: [
+        { name: 'Volume ≥ 2x SMA20', met: isVolumeSpike(volumes, volSMA20, i, 2.0), weight: 2 },
+        { name: 'Volume ≥ 1.5x SMA20', met: isVolumeSpike(volumes, volSMA20, i, 1.5), weight: 1 },
+        { name: '3 nến volume tăng', met: volumes[i] > volumes[i-1] && volumes[i-1] > volumes[i-2], weight: 1 },
+      ]
+    });
+    // ZONE 5: KEY LEVEL — Gần S/R, BB, VWAP
+    zones.push({
+      zone: 'KEY LEVEL', weight: 4,
+      conditions: [
+        { name: 'Bounce từ EMA21', met: Math.abs(lows[i] - ema21[i]) / ema21[i] < 0.003, weight: 2 },
+        { name: 'Bounce từ VWAP', met: Math.abs(lows[i] - vwap[i]) / vwap[i] < 0.003, weight: 2 },
+        { name: 'Bounce từ BB Lower', met: bb.lower[i] && Math.abs(lows[i] - bb.lower[i]) / bb.lower[i] < 0.005, weight: 1 },
+        { name: 'Bounce từ EMA50', met: Math.abs(lows[i] - ema50[i]) / ema50[i] < 0.003, weight: 1 },
+      ]
+    });
+  } else {
+    // SHORT — ngược lại
+    zones.push({
+      zone: 'TREND', weight: 5,
+      conditions: [
+        { name: 'HTF 4h+1h Bearish', met: htfTrend === 'BEARISH', weight: 3 },
+        { name: 'HTF ≠ Bullish', met: htfTrend !== 'BULLISH', weight: 1 },
+        { name: 'EMA9 < EMA21', met: ema9[i] < ema21[i], weight: 1 },
+        { name: 'Price < EMA50', met: price < ema50[i], weight: 1 },
+        { name: 'Price < EMA200', met: ema200[i] ? price < ema200[i] : false, weight: 1 },
+      ]
+    });
+    zones.push({
+      zone: 'STRUCTURE', weight: 5,
+      conditions: [
+        { name: 'Structure Bearish (LH/LL)', met: structure.trend === 'BEARISH', weight: 3 },
+        { name: 'Structure ≠ Bullish', met: structure.trend !== 'BULLISH', weight: 1 },
+        { name: 'Price < VWAP', met: price < vwap[i], weight: 1 },
+      ]
+    });
+    zones.push({
+      zone: 'MOMENTUM', weight: 4,
+      conditions: [
+        { name: 'RSI 35-55 (weak momentum)', met: rsi14[i] != null && rsi14[i] > 35 && rsi14[i] < 55, weight: 2 },
+        { name: 'MACD Histogram < 0', met: macd.histogram[i] < 0, weight: 1 },
+        { name: 'MACD Histogram giảm', met: macd.histogram[i] < macd.histogram[i-1], weight: 1 },
+        { name: 'StochRSI Cross Down', met: stochRSI.k[i] != null && stochRSI.k[i] < stochRSI.d[i], weight: 1 },
+      ]
+    });
+    zones.push({
+      zone: 'VOLUME', weight: 3,
+      conditions: [
+        { name: 'Volume ≥ 2x SMA20', met: isVolumeSpike(volumes, volSMA20, i, 2.0), weight: 2 },
+        { name: 'Volume ≥ 1.5x SMA20', met: isVolumeSpike(volumes, volSMA20, i, 1.5), weight: 1 },
+        { name: '3 nến volume tăng', met: volumes[i] > volumes[i-1] && volumes[i-1] > volumes[i-2], weight: 1 },
+      ]
+    });
+    zones.push({
+      zone: 'KEY LEVEL', weight: 4,
+      conditions: [
+        { name: 'Reject từ EMA21', met: Math.abs(highs[i] - ema21[i]) / ema21[i] < 0.003, weight: 2 },
+        { name: 'Reject từ VWAP', met: Math.abs(highs[i] - vwap[i]) / vwap[i] < 0.003, weight: 2 },
+        { name: 'Reject từ BB Upper', met: bb.upper[i] && Math.abs(highs[i] - bb.upper[i]) / bb.upper[i] < 0.005, weight: 1 },
+        { name: 'Reject từ EMA50', met: Math.abs(highs[i] - ema50[i]) / ema50[i] < 0.003, weight: 1 },
+      ]
+    });
+  }
+
+  // Tính score cho từng zone và tổng
+  let totalScore = 0, maxScore = 0, zonesConfirmed = 0;
+  const allMet = [], allMissed = [], zoneResults = [];
+
+  for (const z of zones) {
+    let zMet = 0, zMax = 0;
+    for (const c of z.conditions) {
+      zMax += c.weight;
+      if (c.met) { zMet += c.weight; allMet.push(`[${z.zone}] ${c.name}`); }
+      else allMissed.push(`[${z.zone}] ${c.name}`);
+    }
+    const zPct = zMax > 0 ? (zMet / zMax * 100) : 0;
+    if (zPct >= 50) zonesConfirmed++;
+    totalScore += zMet;
+    maxScore += zMax;
+    zoneResults.push({ zone: z.zone, score: zMet, max: zMax, pct: Math.round(zPct), confirmed: zPct >= 50 });
+  }
+
+  return {
+    totalScore, maxScore,
+    totalPct: maxScore > 0 ? (totalScore / maxScore * 100) : 0,
+    zonesConfirmed, totalZones: zones.length,
+    zoneResults, metNames: allMet, missedNames: allMissed,
+    structure, htfTrend, atrVal,
+    // Pass through for SL/TP calculation
+    swingHighs: structure.swingHighs, swingLows: structure.swingLows,
+  };
+}
+
+// 9. Weighted Signal Scoring — mỗi điều kiện có trọng số riêng
+function calcSignalScore(conditions) {
+  let totalWeight = 0, metWeight = 0, metNames = [], missedNames = [];
+  for (const c of conditions) {
+    totalWeight += c.weight;
+    if (c.met) { metWeight += c.weight; metNames.push(c.name); }
+    else missedNames.push(c.name);
+  }
+  return { score: metWeight, maxScore: totalWeight, pct: totalWeight > 0 ? (metWeight / totalWeight * 100) : 0, metNames, missedNames };
+}
+
+// ═══ DATA FETCHING ═══
+
+// Fetch Kline data từ Binance REST API
+async function fetchKlines(symbol, interval, limit = 300) {
+  try {
+    const resp = await fetch(`${BINANCE_REST}/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`);
+    const data = await resp.json();
+    return data.map(k => ({
+      time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5], closeTime: k[6]
+    }));
+  } catch (e) {
+    console.error(`Fetch klines error ${symbol} ${interval}:`, e);
+    return [];
+  }
+}
+
+// Fetch all kline data cho tất cả coins & timeframes
+async function fetchAllKlines() {
+  const promises = [];
+  for (const coin of COINS) {
+    for (const tf of TIMEFRAMES) {
+      promises.push(
+        fetchKlines(coin, tf, 300).then(data => {
+          STATE.klineData[`${coin}_${tf}`] = data;
+        })
+      );
+    }
+  }
+  await Promise.all(promises);
+}
+
+// Fetch Fear & Greed Index
+async function fetchFearGreed() {
+  try {
+    const resp = await fetch('https://api.alternative.me/fng/?limit=1');
+    const data = await resp.json();
+    STATE.fearGreed = data.data[0];
+  } catch (e) { console.error('FGI error:', e); }
+}
+
+// Fetch BTC Dominance từ CoinGecko
+async function fetchBTCDominance() {
+  try {
+    const resp = await fetch('https://api.coingecko.com/api/v3/global');
+    const data = await resp.json();
+    STATE.btcDominance = data.data.market_cap_percentage.btc;
+  } catch (e) { console.error('BTC Dom error:', e); }
+}
+
+// Fetch Funding Rate
+async function fetchFundingRate() {
+  try {
+    const resp = await fetch(`${BINANCE_FAPI}/fundingRate?symbol=BTCUSDT&limit=1`);
+    const data = await resp.json();
+    STATE.fundingRate = data.length ? +data[0].fundingRate : null;
+  } catch (e) { console.error('Funding rate error:', e); }
+}
+
+// ═══ WEBSOCKET — Real-time Price ═══
+let ws = null;
+function connectWebSocket() {
+  const streams = COINS.map(c => `${c.toLowerCase()}@ticker`).join('/');
+  ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
+
+  ws.onopen = () => {
+    STATE.wsConnected = true;
+    document.getElementById('signalStatus').textContent = '🟢 Live';
+    document.getElementById('signalStatus').style.color = 'var(--green)';
+  };
+
+  ws.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    if (msg.data && msg.data.s) {
+      const d = msg.data;
+      STATE.prevPrices[d.s] = STATE.prices[d.s];
+      STATE.prices[d.s] = +d.c;
+      updatePriceBar(d.s, +d.c, +d.P);
+    }
+  };
+
+  ws.onclose = () => {
+    STATE.wsConnected = false;
+    document.getElementById('signalStatus').textContent = '🔴 Mất kết nối';
+    document.getElementById('signalStatus').style.color = 'var(--red)';
+    setTimeout(connectWebSocket, 3000);
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+function updatePriceBar(symbol, price, changePct) {
+  const id = symbol.replace('USDT', '').toLowerCase();
+  const priceEl = document.getElementById(`price-${id}`);
+  const changeEl = document.getElementById(`change-${id}`);
+  if (!priceEl) return;
+  priceEl.textContent = fmtPrice(price, symbol);
+  priceEl.className = `value ${changePct >= 0 ? 'price-up' : 'price-down'}`;
+  changeEl.textContent = `${changePct >= 0 ? '+' : ''}${fmt(changePct)}%`;
+  changeEl.className = `change ${changePct >= 0 ? 'change-up' : 'change-down'}`;
+}
+
+// ═══ SIGNAL ENGINE V3 — SNIPER MODE ═══
+// Một phương pháp duy nhất, chất lượng cao nhất, chỉ vào lệnh khi confluence ≥ 4/5 zones
+
+// Helper: đếm consecutive losses
+function getConsecutiveLosses(trades) {
+  let count = 0;
+  for (let i = trades.length - 1; i >= 0; i--) {
+    if (trades[i].result === 'LOSS') count++;
+    else break;
+  }
+  return count;
+}
+
+function analyzeSignals() {
+  const newSignals = [];
+
+  // ═══ GATE 1: SESSION FILTER — chỉ trade giờ London/NY ═══
+  if (!isGoodSession()) return;
+
+  // ═══ GATE 2: BTC DANGER ZONE — dừng hoàn toàn khi BTC ở 10k-30k ═══
+  if (isBTCInDangerZone()) {
+    updateMarketStatusUI('DANGER_ZONE');
+    return;
+  }
+
+  // ═══ GATE 2b: BTC MARKET HEALTH — bảo vệ đa tầng theo giá BTC ═══
+  const btcHealth = getBTCMarketHealth();
+  if (btcHealth.level === 'EXTREME') {
+    // Drawdown > 40% hoặc BTC < $30k → DỪNG HOÀN TOÀN
+    updateMarketStatusUI('BTC_BEAR_EXTREME', btcHealth);
+    return;
+  }
+  if (btcHealth.level === 'DANGER') {
+    // Drawdown > 25% hoặc BTC < $50k → DỪNG HOÀN TOÀN
+    updateMarketStatusUI('BTC_BEAR_DANGER', btcHealth);
+    return;
+  }
+  // CAUTION: drawdown 15-25% → vẫn trade nhưng nâng ngưỡng (xử lý bên dưới)
+
+  // ═══ GATE 3: BTC CRASH — dừng khi BTC crash > 3-8% ═══
+  const btcCrash = isBTCCrashing();
+  if (btcCrash.crashing) {
+    updateMarketStatusUI('BTC_CRASH', btcCrash);
+    return;
+  }
+
+  // ═══ GATE 4: RISK SCORE — dừng khi risk quá cao ═══
+  if (STATE.riskScore >= 8) {
+    updateMarketStatusUI('HIGH_RISK');
+    return;
+  }
+
+  // ═══ GATE 5: DAILY LOSS LIMIT — thua 2% hoặc 2 lệnh liên tiếp → dừng ═══
+  const todayTrades = STATE.trades.filter(t => t.closeDate && new Date(t.closeDate).toDateString() === new Date().toDateString());
+  const todayLossPct = todayTrades.reduce((a, t) => a + (t.netPnl < 0 ? Math.abs(t.netPnl) : 0), 0) / STATE.capital * 100;
+  const consLosses = getConsecutiveLosses(todayTrades);
+  if (todayLossPct >= 2 || consLosses >= 2) {
+    updateMarketStatusUI('DAILY_LIMIT', { todayLossPct, consLosses });
+    return;
+  }
+
+  // Nếu qua hết gate → cập nhật UI
+  if (btcHealth.level === 'CAUTION') {
+    updateMarketStatusUI('CAUTION', { ...btcHealth, btcCrash });
+  } else {
+    updateMarketStatusUI('SAFE', btcCrash);
+  }
+
+  // Nếu CAUTION → nâng ngưỡng vào lệnh (cần 5/5 zones thay vì 4/5)
+  const minZones = btcHealth.level === 'CAUTION' ? 5 : 4;
+  const minScore = btcHealth.level === 'CAUTION' ? 82 : 75;
+  const minRR = btcHealth.level === 'CAUTION' ? 2.0 : 1.5;
+
+  // ═══ SINGLE SNIPER SETUP — Confluence-based entry ═══
+  for (const coin of COINS) {
+    for (const tf of TIMEFRAMES) {
+      if (isOnCooldown(coin, 'SNIPER', tf, 15)) continue;
+
+      const key = `${coin}_${tf}`;
+      const klines = STATE.klineData[key];
+      if (!klines || klines.length < 210) continue;
+
+      const closes = klines.map(k => k.close);
+      const highs = klines.map(k => k.high);
+      const lows = klines.map(k => k.low);
+      const volumes = klines.map(k => k.volume);
+      const timestamps = klines.map(k => k.time);
+      const i = closes.length - 1;
+      const price = closes[i];
+
+      // BTC correlation check cho altcoin
+      if (!isBTCCorrelationSafe('LONG', coin) && !isBTCCorrelationSafe('SHORT', coin)) continue;
+
+      // ═══ LONG ANALYSIS ═══
+      if (isBTCCorrelationSafe('LONG', coin)) {
+        const longConf = calcConfluenceZones(coin, tf, 'LONG', price, closes, highs, lows, volumes, timestamps, i);
+
+        // NGƯỠNG SNIPER: dynamic theo BTC health (CAUTION → khắt khe hơn)
+        if (longConf.zonesConfirmed >= minZones && longConf.totalPct >= minScore) {
+          const sl = findStructureSL('LONG', longConf.swingHighs, longConf.swingLows, price, longConf.atrVal);
+          const risk = price - sl;
+          if (risk > 0 && risk < price * 0.03) {
+            const { tp1, tp2 } = findDynamicTP('LONG', longConf.swingHighs, longConf.swingLows, price, longConf.atrVal);
+            const rr = Math.abs(tp1 - price) / risk;
+            if (rr >= minRR) {
+              const grade = longConf.zonesConfirmed >= 5 ? 'S' : longConf.totalPct >= 85 ? 'A' : 'B';
+              newSignals.push(createSniperSignal(coin, tf, 'LONG', price, sl, tp1, tp2, risk, longConf, grade, timestamps[i]));
+              setCooldown(coin, 'SNIPER', tf);
+            }
+          }
+        }
+      }
+
+      // ═══ SHORT ANALYSIS ═══
+      if (isBTCCorrelationSafe('SHORT', coin)) {
+        const shortConf = calcConfluenceZones(coin, tf, 'SHORT', price, closes, highs, lows, volumes, timestamps, i);
+
+        if (shortConf.zonesConfirmed >= minZones && shortConf.totalPct >= minScore) {
+          const sl = findStructureSL('SHORT', shortConf.swingHighs, shortConf.swingLows, price, shortConf.atrVal);
+          const risk = sl - price;
+          if (risk > 0 && risk < price * 0.03) {
+            const { tp1, tp2 } = findDynamicTP('SHORT', shortConf.swingHighs, shortConf.swingLows, price, shortConf.atrVal);
+            const rr = Math.abs(price - tp1) / risk;
+            if (rr >= minRR) {
+              const grade = shortConf.zonesConfirmed >= 5 ? 'S' : shortConf.totalPct >= 85 ? 'A' : 'B';
+              newSignals.push(createSniperSignal(coin, tf, 'SHORT', price, sl, tp1, tp2, risk, shortConf, grade, timestamps[i]));
+              setCooldown(coin, 'SNIPER', tf);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Lọc trùng
+  const existingKeys = new Set(STATE.signals.map(s => `${s.coin}_${s.tf}_${s.setup}_${s.direction}`));
+  const truly = newSignals.filter(s => !existingKeys.has(`${s.coin}_${s.tf}_${s.setup}_${s.direction}`));
+
+  if (truly.length > 0) {
+    STATE.signals = [...truly, ...STATE.signals].slice(0, 50);
+    STATE.signalCount += truly.length;
+    updateSignalBadge();
+    playAlert();
+    showToast(`🎯 ${truly.length} SNIPER signal!`, 'signal');
+    renderSignals();
+    truly.forEach(sig => paperEngine.onNewSignal(sig));
+  }
+}
+
+// Tạo SNIPER signal
+function createSniperSignal(coin, tf, direction, entry, sl, tp1, tp2, risk, confluence, grade, timestamp) {
+  const rr = risk > 0 ? (Math.abs(tp1 - entry) / risk) : 0;
+  const strength = grade === 'S' ? 'Strong' : grade === 'A' ? 'Strong' : 'Medium';
+  return {
+    id: `${coin}_${tf}_SNIPER_${direction}_${Date.now()}`,
+    coin, tf, setup: 'SNIPER', direction, entry, sl, tp1, tp2,
+    risk, rr, strength, grade,
+    condsMet: confluence.zonesConfirmed, totalConds: confluence.totalZones,
+    scorePct: Math.round(confluence.totalPct),
+    htfTrend: confluence.htfTrend || '--',
+    structureTrend: confluence.structure?.trend || '--',
+    zoneResults: confluence.zoneResults || [],
+    metNames: confluence.metNames || [], missedNames: confluence.missedNames || [],
+    atrAtEntry: confluence.atrVal,
+    timestamp: timestamp || Date.now(),
+    time: new Date().toLocaleString('vi-VN'),
+  };
+}
+
+// Market Status UI
+function updateMarketStatusUI(status, data = {}) {
+  const statusEl = document.getElementById('setupDStatus');
+  const reasonEl = document.getElementById('setupDReason');
+  if (!statusEl) return;
+  switch (status) {
+    case 'DANGER_ZONE':
+      statusEl.className = 'dca-status dca-disabled';
+      statusEl.textContent = '🚨 BTC DANGER ZONE ($10k-$30k) — DỪNG TRADE';
+      reasonEl.innerHTML = '⛔ BTC ở vùng <strong>$10,000 - $30,000</strong> — Bear market. KHÔNG VÀO LỆNH cho đến khi BTC > $30,000.';
+      break;
+    case 'BTC_BEAR_EXTREME':
+      statusEl.className = 'dca-status dca-disabled';
+      statusEl.textContent = '💀 BTC BEAR MARKET CỰC KỲ NGUY HIỂM — DỪNG TRADE';
+      reasonEl.innerHTML = `⛔ ${data.reason} | Drawdown > 40% → KHÔNG VÀO LỆNH. Chờ BTC phục hồi.`;
+      break;
+    case 'BTC_BEAR_DANGER':
+      statusEl.className = 'dca-status dca-disabled';
+      statusEl.textContent = '🔴 BTC GIẢM SÂU — DỪNG TRADE';
+      reasonEl.innerHTML = `⚠️ ${data.reason} | Drawdown > 25% hoặc BTC < $50k → KHÔNG VÀO LỆNH. Quá nguy hiểm.`;
+      break;
+    case 'BTC_CRASH':
+      statusEl.className = 'dca-status dca-disabled';
+      statusEl.textContent = '💥 BTC CRASH DETECTED — DỪNG TRADE';
+      reasonEl.innerHTML = `📉 BTC giảm mạnh: 1h: <strong>${fmt(data.drop1h)}%</strong> | 2h: <strong>${fmt(data.drop2h)}%</strong> | 5h: <strong>${fmt(data.drop5h)}%</strong>`;
+      break;
+    case 'HIGH_RISK':
+      statusEl.className = 'dca-status dca-disabled';
+      statusEl.textContent = '🛑 RISK QUÁ CAO — DỪNG TRADE';
+      reasonEl.textContent = `Risk Score: ${STATE.riskScore}/10. Chờ thị trường ổn định.`;
+      break;
+    case 'DAILY_LIMIT':
+      statusEl.className = 'dca-status dca-disabled';
+      statusEl.textContent = '⛔ ĐÃ ĐẠT GIỚI HẠN NGÀY — DỪNG TRADE';
+      reasonEl.textContent = `Thua hôm nay: ${fmt(data.todayLossPct)}% vốn | Thua liên tiếp: ${data.consLosses}. NGHỈ NGƠI.`;
+      break;
+    case 'CAUTION':
+      statusEl.className = 'dca-status dca-active';
+      statusEl.style.borderColor = 'var(--yellow)';
+      const btcP2 = STATE.prices.BTCUSDT;
+      statusEl.textContent = '⚠️ SNIPER MODE — THẬN TRỌNG (Ngưỡng nâng cao)';
+      reasonEl.innerHTML = `⚠️ ${data.reason} | BTC drawdown 15-25% → Nâng ngưỡng: cần <strong>5/5 zones</strong>, score ≥82%, R:R ≥2.0`;
+      STATE.setupDEnabled = true;
+      break;
+    case 'SAFE': {
+      statusEl.className = 'dca-status dca-active';
+      statusEl.style.borderColor = '';
+      const btcPrice = STATE.prices.BTCUSDT;
+      statusEl.textContent = '🎯 SNIPER MODE — SẴN SÀNG';
+      reasonEl.innerHTML = `✅ BTC: $${btcPrice ? btcPrice.toLocaleString() : '--'} | Risk: ${STATE.riskScore}/10 | Chỉ vào lệnh khi ≥4/5 zones, score ≥75%, R:R ≥1.5`;
+      STATE.setupDEnabled = true;
+      STATE.setupDReasons = [];
+      break;
+    }
+  }
+}
+
+// (Old createSignal, createSignalV2, buildDCALadder, updateSetupDUI removed — replaced by createSniperSignal + updateMarketStatusUI)
+
+// ═══ SIGNAL RENDERING ═══
+
+function renderSignals() {
+  const list = document.getElementById('signalsList');
+  const noSig = document.getElementById('noSignals');
+  const coinFilter = document.getElementById('sigCoin').value;
+  const tfFilter = document.getElementById('sigTf').value;
+  const setupFilter = document.getElementById('sigSetup').value;
+
+  let filtered = STATE.signals;
+  if (coinFilter !== 'all') filtered = filtered.filter(s => s.coin === coinFilter);
+  if (tfFilter !== 'all') filtered = filtered.filter(s => s.tf === tfFilter);
+  if (setupFilter !== 'all') filtered = filtered.filter(s => s.grade === setupFilter);
+
+  if (filtered.length === 0) {
+    list.innerHTML = '';
+    noSig.style.display = 'block';
+    return;
+  }
+  noSig.style.display = 'none';
+
+  list.innerHTML = filtered.map(s => {
+    const dirClass = s.direction === 'LONG' ? 'long' : 'short';
+    const dirIcon = s.direction === 'LONG' ? '🟢' : '🔴';
+    const setupClass = s.grade === 'S' ? 'setup-d' : s.grade === 'A' ? 'setup-a' : 'setup-b';
+    const strengthClass = `strength-${s.strength.toLowerCase()}`;
+
+    // HTF Trend badge
+    const htfColor = s.htfTrend === 'BULLISH' ? 'var(--green)' : s.htfTrend === 'BEARISH' ? 'var(--red)' : 'var(--yellow)';
+    const htfIcon = s.htfTrend === 'BULLISH' ? '📈' : s.htfTrend === 'BEARISH' ? '📉' : '➡️';
+    const htfBg = s.htfTrend === 'BULLISH' ? 'var(--green-bg)' : s.htfTrend === 'BEARISH' ? 'var(--red-bg)' : 'var(--yellow-bg)';
+
+    // Structure badge
+    const strColor = s.structureTrend === 'BULLISH' ? 'var(--green)' : s.structureTrend === 'BEARISH' ? 'var(--red)' : 'var(--text3)';
+
+    // Score color
+    const scorePct = s.scorePct || 0;
+    const scoreColor = scorePct >= 85 ? 'var(--green)' : scorePct >= 70 ? 'var(--yellow)' : 'var(--red)';
+    const scoreBg = scorePct >= 85 ? 'var(--green-bg)' : scorePct >= 70 ? 'var(--yellow-bg)' : 'var(--red-bg)';
+
+    // Conditions met/missed tooltips
+    const metList = (s.metNames || []).map(n => '✅ ' + n).join('\n');
+    const missedList = (s.missedNames || []).map(n => '❌ ' + n).join('\n');
+    const condTooltip = (metList + '\n' + missedList).trim();
+
+    // Zone results + Conditions detail
+    const zoneResults = s.zoneResults || [];
+    const zonesHtml = zoneResults.length > 0 ? `
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;line-height:1.8">
+        <div style="margin-bottom:4px;font-weight:600;color:var(--text2)">🎯 Confluence Zones (${s.condsMet}/${s.totalConds} confirmed):</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">
+          ${zoneResults.map(z => `<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;background:${z.confirmed ? 'var(--green-bg)' : 'var(--red-bg)'};color:${z.confirmed ? 'var(--green)' : 'var(--red)'}">${z.confirmed ? '✅' : '❌'} ${z.zone} ${z.pct}%</span>`).join('')}
+        </div>
+        ${(s.metNames || []).map(n => `<span style="display:inline-block;background:var(--green-bg);color:var(--green);padding:1px 6px;border-radius:3px;margin:1px 2px;font-size:10px">✅ ${n}</span>`).join('')}
+        ${(s.missedNames || []).map(n => `<span style="display:inline-block;background:var(--red-bg);color:var(--red);padding:1px 6px;border-radius:3px;margin:1px 2px;font-size:10px">❌ ${n}</span>`).join('')}
+      </div>` : '';
+
+    return `
+    <div class="signal-card ${dirClass}">
+      <div class="signal-header">
+        <div class="signal-pair">
+          <span class="signal-coin">${s.coin.replace('USDT','')}/USDT</span>
+          <span class="signal-tf">${s.tf}</span>
+          <span class="signal-setup ${setupClass}">🎯 Grade ${s.grade || 'B'}</span>
+          <span class="signal-strength ${strengthClass}">${s.strength}</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:3px;font-weight:700;background:${scoreBg};color:${scoreColor}" title="${condTooltip}">${scorePct}%</span>
+        </div>
+        <div class="signal-direction" style="color:${s.direction === 'LONG' ? 'var(--green)' : 'var(--red)'}">
+          ${dirIcon} ${s.direction}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:10px;padding:2px 6px;border-radius:3px;background:${htfBg};color:${htfColor}">${htfIcon} HTF: ${s.htfTrend || '--'}</span>
+        <span style="font-size:10px;padding:2px 6px;border-radius:3px;background:var(--bg3);color:${strColor}">🏗️ Structure: ${s.structureTrend || '--'}</span>
+        <span style="font-size:10px;padding:2px 6px;border-radius:3px;background:var(--bg3);color:var(--text2)">⚖️ Score: ${s.condsMet}/${s.totalConds} pts</span>
+      </div>
+      <div class="signal-grid">
+        <div><div class="label">Entry</div><div class="value">${fmtPrice(s.entry, s.coin)}</div></div>
+        <div><div class="label">Stop Loss</div><div class="value" style="color:var(--red)">${fmtPrice(s.sl, s.coin)}</div></div>
+        <div><div class="label">TP 1</div><div class="value" style="color:var(--green)">${fmtPrice(s.tp1, s.coin)}</div></div>
+        <div><div class="label">TP 2</div><div class="value" style="color:var(--green)">${fmtPrice(s.tp2, s.coin)}</div></div>
+        <div><div class="label">R:R</div><div class="value">${fmt(s.rr, 1)}</div></div>
+        <div><div class="label">Thời gian</div><div class="value" style="font-size:10px">${s.time}</div></div>
+      </div>
+      ${zonesHtml}
+      <div class="signal-actions">
+        <button class="btn btn-success btn-sm" onclick='takeThisTrade(${JSON.stringify(s).replace(/'/g, "\\'")})'>📋 Take This Trade</button>
+        <button class="ai-btn btn-sm" onclick='aiAskClaude(${JSON.stringify(s).replace(/'/g, "\\'")})'>🤖 Ask Claude</button>
+        <button class="btn btn-outline btn-sm" onclick="dismissSignal('${s.id}')">Bỏ qua</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateSignalBadge() {
+  const badge = document.getElementById('signalBadge');
+  if (STATE.signalCount > 0) {
+    badge.style.display = 'inline';
+    badge.textContent = STATE.signalCount;
+  }
+}
+
+function clearSignals() {
+  STATE.signals = [];
+  STATE.signalCount = 0;
+  document.getElementById('signalBadge').style.display = 'none';
+  renderSignals();
+}
+
+function dismissSignal(id) {
+  STATE.signals = STATE.signals.filter(s => s.id !== id);
+  renderSignals();
+}
+
+// Filters
+document.getElementById('sigCoin').addEventListener('change', renderSignals);
+document.getElementById('sigTf').addEventListener('change', renderSignals);
+document.getElementById('sigSetup').addEventListener('change', renderSignals);
+
+// ═══ CHART SYSTEM ═══
+// Dùng TradingView Lightweight Charts
+
+let mainChart, candleSeries, vwapLine, ema9Line, ema21Line, bbUpperLine, bbLowerLine;
+let rsiChart, rsiSeries, stochKSeries, stochDSeries;
+let macdChart, macdLineSeries, macdSignalSeries, macdHistSeries;
+let volumeChart, volumeSeries;
+let signalMarkers = [];
+
+function initCharts() {
+  const chartOpts = {
+    layout: { background: { color: '#1a1f2e' }, textColor: '#8b949e', fontSize: 11, fontFamily: 'Inter, sans-serif' },
+    grid: { vertLines: { color: '#21283b' }, horzLines: { color: '#21283b' } },
+    crosshair: { mode: 0 },
+    rightPriceScale: { borderColor: '#30363d' },
+    timeScale: { borderColor: '#30363d', timeVisible: true, secondsVisible: false },
+  };
+
+  // Main Candlestick Chart
+  const mainEl = document.getElementById('main-chart');
+  mainChart = LightweightCharts.createChart(mainEl, { ...chartOpts, height: mainEl.offsetHeight || 400 });
+  candleSeries = mainChart.addCandlestickSeries({
+    upColor: '#00c853', downColor: '#ff5252', borderUpColor: '#00c853', borderDownColor: '#ff5252',
+    wickUpColor: '#00c853', wickDownColor: '#ff5252'
+  });
+  vwapLine = mainChart.addLineSeries({ color: '#ffc107', lineWidth: 1, lineStyle: 2, title: 'VWAP' });
+  ema9Line = mainChart.addLineSeries({ color: '#58a6ff', lineWidth: 1, title: 'EMA9' });
+  ema21Line = mainChart.addLineSeries({ color: '#bc8cff', lineWidth: 1, title: 'EMA21' });
+  bbUpperLine = mainChart.addLineSeries({ color: 'rgba(255,152,0,0.4)', lineWidth: 1, lineStyle: 2 });
+  bbLowerLine = mainChart.addLineSeries({ color: 'rgba(255,152,0,0.4)', lineWidth: 1, lineStyle: 2 });
+
+  // RSI Sub-Chart
+  const rsiEl = document.getElementById('rsi-chart');
+  rsiChart = LightweightCharts.createChart(rsiEl, { ...chartOpts, height: rsiEl.offsetHeight || 120 });
+  rsiSeries = rsiChart.addLineSeries({ color: '#ffc107', lineWidth: 1, title: 'RSI' });
+  stochKSeries = rsiChart.addLineSeries({ color: '#58a6ff', lineWidth: 1, title: 'StochK' });
+  stochDSeries = rsiChart.addLineSeries({ color: '#ff5252', lineWidth: 1, lineStyle: 2, title: 'StochD' });
+
+  // MACD Sub-Chart
+  const macdEl = document.getElementById('macd-chart');
+  macdChart = LightweightCharts.createChart(macdEl, { ...chartOpts, height: macdEl.offsetHeight || 120 });
+  macdLineSeries = macdChart.addLineSeries({ color: '#58a6ff', lineWidth: 1, title: 'MACD' });
+  macdSignalSeries = macdChart.addLineSeries({ color: '#ff9800', lineWidth: 1, title: 'Signal' });
+  macdHistSeries = macdChart.addHistogramSeries({ title: 'Histogram' });
+
+  // Volume Sub-Chart
+  const volEl = document.getElementById('volume-chart');
+  volumeChart = LightweightCharts.createChart(volEl, { ...chartOpts, height: volEl.offsetHeight || 80 });
+  volumeSeries = volumeChart.addHistogramSeries({ priceFormat: { type: 'volume' } });
+
+  // Sync crosshair across all charts
+  const charts = [mainChart, rsiChart, macdChart, volumeChart];
+  charts.forEach((chart, idx) => {
+    chart.subscribeCrosshairMove(param => {
+      if (!param.time) return;
+      charts.forEach((c, i) => { if (i !== idx) c.setCrosshairPosition(undefined, undefined, undefined); });
+    });
+  });
+
+  // Sync timescale
+  mainChart.timeScale().subscribeVisibleLogicalRangeChange(range => {
+    if (range) {
+      rsiChart.timeScale().setVisibleLogicalRange(range);
+      macdChart.timeScale().setVisibleLogicalRange(range);
+      volumeChart.timeScale().setVisibleLogicalRange(range);
+    }
+  });
+}
+
+function updateChartData() {
+  const coin = document.getElementById('chartCoin').value;
+  const tf = document.querySelector('.tf-btn.active')?.dataset.tf || '15m';
+  const key = `${coin}_${tf}`;
+  const klines = STATE.klineData[key];
+  if (!klines || klines.length < 50) return;
+
+  const closes = klines.map(k => k.close);
+  const highs = klines.map(k => k.high);
+  const lows = klines.map(k => k.low);
+  const volumes = klines.map(k => k.volume);
+  const timestamps = klines.map(k => k.time);
+
+  // Chuyển timestamp sang giây cho Lightweight Charts
+  const toSec = t => Math.floor(t / 1000);
+
+  // Candlestick data
+  candleSeries.setData(klines.map(k => ({
+    time: toSec(k.time), open: k.open, high: k.high, low: k.low, close: k.close
+  })));
+
+  // VWAP
+  if (document.getElementById('showVwap').checked) {
+    const vwapData = calcVWAP(highs, lows, closes, volumes, timestamps);
+    vwapLine.setData(vwapData.map((v, i) => v ? { time: toSec(timestamps[i]), value: v } : null).filter(Boolean));
+  } else { vwapLine.setData([]); }
+
+  // EMAs
+  if (document.getElementById('showEma').checked) {
+    const ema9 = calcEMA(closes, 9);
+    const ema21 = calcEMA(closes, 21);
+    ema9Line.setData(ema9.map((v, i) => ({ time: toSec(timestamps[i]), value: v })));
+    ema21Line.setData(ema21.map((v, i) => ({ time: toSec(timestamps[i]), value: v })));
+  } else { ema9Line.setData([]); ema21Line.setData([]); }
+
+  // Bollinger Bands
+  if (document.getElementById('showBB').checked) {
+    const bb = calcBollingerBands(closes);
+    bbUpperLine.setData(bb.upper.map((v, i) => v ? { time: toSec(timestamps[i]), value: v } : null).filter(Boolean));
+    bbLowerLine.setData(bb.lower.map((v, i) => v ? { time: toSec(timestamps[i]), value: v } : null).filter(Boolean));
+  } else { bbUpperLine.setData([]); bbLowerLine.setData([]); }
+
+  // RSI
+  const rsi = calcRSI(closes);
+  const stoch = calcStochRSI(closes);
+  rsiSeries.setData(rsi.map((v, i) => v != null ? { time: toSec(timestamps[i]), value: v } : null).filter(Boolean));
+  stochKSeries.setData(stoch.k.map((v, i) => v != null ? { time: toSec(timestamps[i]), value: v } : null).filter(Boolean));
+  stochDSeries.setData(stoch.d.map((v, i) => v != null ? { time: toSec(timestamps[i]), value: v } : null).filter(Boolean));
+
+  // MACD
+  const macd = calcMACD(closes);
+  macdLineSeries.setData(macd.macd.map((v, i) => ({ time: toSec(timestamps[i]), value: v })));
+  macdSignalSeries.setData(macd.signal.map((v, i) => ({ time: toSec(timestamps[i]), value: v })));
+  macdHistSeries.setData(macd.histogram.map((v, i) => ({
+    time: toSec(timestamps[i]), value: v, color: v >= 0 ? 'rgba(0,200,83,0.5)' : 'rgba(255,82,82,0.5)'
+  })));
+
+  // Volume
+  volumeSeries.setData(klines.map(k => ({
+    time: toSec(k.time), value: k.volume, color: k.close >= k.open ? 'rgba(0,200,83,0.3)' : 'rgba(255,82,82,0.3)'
+  })));
+
+  // Signal markers trên chart
+  if (document.getElementById('showSignals').checked) {
+    const markers = STATE.signals
+      .filter(s => s.coin === coin && s.tf === tf)
+      .map(s => ({
+        time: toSec(s.timestamp),
+        position: s.direction === 'LONG' ? 'belowBar' : 'aboveBar',
+        color: s.direction === 'LONG' ? '#00c853' : '#ff5252',
+        shape: s.direction === 'LONG' ? 'arrowUp' : 'arrowDown',
+        text: `${s.setup} ${s.direction}`
+      }));
+    candleSeries.setMarkers(markers);
+  } else {
+    candleSeries.setMarkers([]);
+  }
+}
+
+function resizeCharts() {
+  [mainChart, rsiChart, macdChart, volumeChart].forEach(c => {
+    if (c) c.applyOptions({ width: c.chartElement().parentElement.clientWidth });
+  });
+}
+
+// Chart controls
+document.getElementById('chartCoin').addEventListener('change', () => { loadChartData(); });
+document.querySelectorAll('.tf-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadChartData();
+  });
+});
+['showVwap','showEma','showBB','showSignals'].forEach(id => {
+  document.getElementById(id).addEventListener('change', updateChartData);
+});
+
+async function loadChartData() {
+  const coin = document.getElementById('chartCoin').value;
+  const tf = document.querySelector('.tf-btn.active').dataset.tf;
+  const key = `${coin}_${tf}`;
+  if (!STATE.klineData[key] || STATE.klineData[key].length < 50) {
+    STATE.klineData[key] = await fetchKlines(coin, tf, 300);
+  }
+  updateChartData();
+}
+
+// ═══ RISK MONITOR ═══
+
+async function updateRiskMonitor() {
+  await Promise.all([fetchFearGreed(), fetchBTCDominance(), fetchFundingRate()]);
+
+  // Tính BTC vs MA200
+  const btcData = STATE.klineData['BTCUSDT_1h'];
+  if (btcData && btcData.length > 200) {
+    const closes = btcData.map(k => k.close);
+    const ma200 = calcSMA(closes, 200);
+    const lastMA = ma200[ma200.length - 1];
+    const lastPrice = closes[closes.length - 1];
+    STATE.btcMa200 = { price: lastPrice, ma200: lastMA, above: lastPrice > lastMA };
+  }
+
+  // Tính Risk Score
+  let score = 0;
+  const details = [];
+
+  // Fear & Greed
+  if (STATE.fearGreed) {
+    const val = +STATE.fearGreed.value;
+    document.getElementById('fgiValue').textContent = `${val} — ${STATE.fearGreed.value_classification}`;
+    let fgiScore = 0, status = '', statusClass = '';
+    if (val > 75) { fgiScore = 3; status = '🔴 Extreme Greed'; statusClass = 'status-red'; }
+    else if (val > 55) { fgiScore = 2; status = '🟡 Greed'; statusClass = 'status-yellow'; }
+    else if (val >= 45) { fgiScore = 0; status = '🟢 Neutral'; statusClass = 'status-green'; }
+    else if (val >= 25) { fgiScore = 1; status = '🟡 Fear'; statusClass = 'status-yellow'; }
+    else { fgiScore = 3; status = '🔴 Extreme Fear'; statusClass = 'status-red'; }
+    score += fgiScore;
+    document.getElementById('fgiStatus').innerHTML = `<span class="${statusClass}">${status}</span>`;
+    details.push({ name: 'Fear & Greed', value: `${val}`, status, score: fgiScore });
+  }
+
+  // BTC vs MA200
+  if (STATE.btcMa200) {
+    const { price, ma200, above } = STATE.btcMa200;
+    const pctDiff = ((price - ma200) / ma200 * 100).toFixed(1);
+    document.getElementById('btcMa200Value').textContent = `${above ? 'Trên' : 'Dưới'} MA200 (${pctDiff}%)`;
+    const ma200Score = above ? 0 : 3;
+    score += ma200Score;
+    const status = above ? '🟢 Bullish' : '🔴 Bearish';
+    const statusClass = above ? 'status-green' : 'status-red';
+    document.getElementById('btcMa200Status').innerHTML = `<span class="${statusClass}">${status}</span>`;
+    details.push({ name: 'BTC vs MA200', value: `${pctDiff}%`, status, score: ma200Score });
+  }
+
+  // Funding Rate
+  if (STATE.fundingRate != null) {
+    const fr = STATE.fundingRate * 100; // Convert to percentage
+    document.getElementById('fundingValue').textContent = `${fr.toFixed(4)}%`;
+    let frScore = 0, status = '', statusClass = '';
+    if (fr > 0.05) { frScore = 2; status = '🔴 Quá nóng'; statusClass = 'status-red'; }
+    else if (fr > 0.01) { frScore = 1; status = '🟡 Bình thường'; statusClass = 'status-yellow'; }
+    else { frScore = 0; status = '🟢 Thấp'; statusClass = 'status-green'; }
+    score += frScore;
+    document.getElementById('fundingStatus').innerHTML = `<span class="${statusClass}">${status}</span>`;
+    details.push({ name: 'Funding Rate', value: `${fr.toFixed(4)}%`, status, score: frScore });
+  }
+
+  // BTC Dominance
+  if (STATE.btcDominance != null) {
+    document.getElementById('btcDomValue').textContent = `${fmt(STATE.btcDominance)}%`;
+    // BTC Dom tăng = flight to quality (ít rủi ro hơn), giảm mạnh = alt season risk
+    let domScore = 0, status = '', statusClass = '';
+    if (STATE.btcDominance > 55) { domScore = 0; status = '🟢 Tăng (Flight to quality)'; statusClass = 'status-green'; }
+    else if (STATE.btcDominance > 45) { domScore = 1; status = '🟡 Trung bình'; statusClass = 'status-yellow'; }
+    else { domScore = 2; status = '🟡 Giảm (Alt season risk)'; statusClass = 'status-yellow'; }
+    score += domScore;
+    document.getElementById('btcDomStatus').innerHTML = `<span class="${statusClass}">${status}</span>`;
+    details.push({ name: 'BTC Dominance', value: `${fmt(STATE.btcDominance)}%`, status, score: domScore });
+  }
+
+  // Normalize score to 0-10
+  STATE.riskScore = Math.min(10, Math.round(score));
+
+  // Update UI
+  const scoreEl = document.getElementById('riskScoreNum');
+  scoreEl.textContent = STATE.riskScore;
+  if (STATE.riskScore <= 3) scoreEl.style.color = 'var(--green)';
+  else if (STATE.riskScore <= 6) scoreEl.style.color = 'var(--yellow)';
+  else if (STATE.riskScore <= 8) scoreEl.style.color = 'var(--orange)';
+  else scoreEl.style.color = 'var(--red)';
+
+  // Recommendation
+  const recEl = document.getElementById('riskRecommendation');
+  if (STATE.riskScore <= 3) { recEl.className = 'risk-recommendation risk-low'; recEl.textContent = 'Thị trường thuận lợi, trade bình thường'; }
+  else if (STATE.riskScore <= 6) { recEl.className = 'risk-recommendation risk-medium'; recEl.textContent = 'Thận trọng, giảm size lệnh'; }
+  else if (STATE.riskScore <= 8) { recEl.className = 'risk-recommendation risk-high'; recEl.textContent = 'Nguy hiểm, chỉ scalp nhỏ hoặc đứng ngoài'; }
+  else { recEl.className = 'risk-recommendation risk-extreme'; recEl.textContent = '🚨 CẢNH BÁO ĐỎ: Cân nhắc thoát toàn bộ vị thế, giữ stablecoin'; }
+
+  // Detail table
+  document.getElementById('riskDetailTable').innerHTML = details.map(d => `
+    <tr>
+      <td style="padding:6px 8px">${d.name}</td>
+      <td style="padding:6px 8px;text-align:center;font-family:var(--font-mono)">${d.value}</td>
+      <td style="padding:6px 8px;text-align:center">${d.status}</td>
+      <td style="padding:6px 8px;text-align:center;font-family:var(--font-mono)">${d.score}</td>
+    </tr>
+  `).join('');
+}
+
+// ═══ TRADE JOURNAL ═══
+
+function openTradeModal(trade = null) {
+  document.getElementById('tradeModal').classList.add('show');
+  document.getElementById('modalTitle').textContent = trade ? 'Sửa Trade' : 'Thêm Trade Mới';
+  if (trade) {
+    document.getElementById('tradeId').value = trade.id;
+    document.getElementById('tCoin').value = trade.coin;
+    document.getElementById('tTf').value = trade.tf;
+    document.getElementById('tSetup').value = trade.setup;
+    document.getElementById('tDir').value = trade.direction;
+    document.getElementById('tEntry').value = trade.entry;
+    document.getElementById('tExit').value = trade.exit || '';
+    document.getElementById('tSize').value = trade.size;
+    document.getElementById('tLev').value = trade.leverage;
+    document.getElementById('tSL').value = trade.sl || '';
+    document.getElementById('tTP').value = trade.tp || '';
+    document.getElementById('tOpenDate').value = trade.openDate || '';
+    document.getElementById('tCloseDate').value = trade.closeDate || '';
+    document.getElementById('tEmotion').value = trade.emotion || 'Bình tĩnh';
+    document.getElementById('tNotes').value = trade.notes || '';
+    document.getElementById('tScreenshot').value = trade.screenshot || '';
+    STATE.currentRating = trade.rating || 3;
+    if (trade.dcaCount != null) document.getElementById('tDcaCount').value = trade.dcaCount;
+    if (trade.adx != null) document.getElementById('tAdx').value = trade.adx;
+    if (trade.avgEntry != null) document.getElementById('tAvgEntry').value = trade.avgEntry;
+  } else {
+    document.getElementById('tradeForm').reset();
+    document.getElementById('tradeId').value = '';
+    document.getElementById('tLev').value = '1';
+    document.getElementById('tOpenDate').value = new Date().toISOString().slice(0, 16);
+    STATE.currentRating = 3;
+  }
+  updateStarDisplay();
+  toggleSetupDFields();
+}
+
+function closeTradeModal() {
+  document.getElementById('tradeModal').classList.remove('show');
+}
+
+// Take This Trade — auto-fill từ signal
+function takeThisTrade(signal) {
+  openTradeModal();
+  document.getElementById('tCoin').value = signal.coin;
+  document.getElementById('tTf').value = signal.tf;
+  document.getElementById('tSetup').value = signal.setup;
+  document.getElementById('tDir').value = signal.direction;
+  document.getElementById('tEntry').value = signal.entry;
+  document.getElementById('tSL').value = signal.sl;
+  document.getElementById('tTP').value = signal.tp1;
+  document.getElementById('tOpenDate').value = new Date().toISOString().slice(0, 16);
+  toggleSetupDFields();
+}
+
+function toggleSetupDFields() {
+  const setup = document.getElementById('tSetup').value;
+  document.getElementById('setupDFields').style.display = setup === 'D' ? 'block' : 'none';
+}
+document.getElementById('tSetup').addEventListener('change', toggleSetupDFields);
+
+// Stars rating
+document.getElementById('tRating').addEventListener('click', (e) => {
+  if (e.target.tagName === 'SPAN') {
+    STATE.currentRating = +e.target.dataset.v;
+    updateStarDisplay();
+  }
+});
+
+function updateStarDisplay() {
+  document.querySelectorAll('#tRating span').forEach(s => {
+    s.textContent = +s.dataset.v <= STATE.currentRating ? '★' : '☆';
+    s.classList.toggle('filled', +s.dataset.v <= STATE.currentRating);
+  });
+}
+
+function saveTrade(e) {
+  e.preventDefault();
+  const id = document.getElementById('tradeId').value;
+  const entry = +document.getElementById('tEntry').value;
+  const exit = document.getElementById('tExit').value ? +document.getElementById('tExit').value : null;
+  const size = +document.getElementById('tSize').value;
+  const leverage = +document.getElementById('tLev').value || 1;
+  const direction = document.getElementById('tDir').value;
+  const sl = document.getElementById('tSL').value ? +document.getElementById('tSL').value : null;
+  const tp = document.getElementById('tTP').value ? +document.getElementById('tTP').value : null;
+
+  // Tính P&L
+  let pnl = null, pnlPct = null, result = null, fee = 0, netPnl = null;
+  if (exit) {
+    const diff = direction === 'LONG' ? (exit - entry) : (entry - exit);
+    pnlPct = (diff / entry) * 100 * leverage;
+    pnl = size * (diff / entry) * leverage;
+    fee = size * 0.0004 * 2; // 0.04% mỗi chiều × 2
+    netPnl = pnl - fee;
+    result = netPnl > size * 0.001 ? 'WIN' : netPnl < -size * 0.001 ? 'LOSS' : 'BE';
+  }
+
+  const trade = {
+    id: id || Date.now().toString(),
+    coin: document.getElementById('tCoin').value,
+    tf: document.getElementById('tTf').value,
+    setup: document.getElementById('tSetup').value,
+    direction, entry, exit, size, leverage, sl, tp,
+    openDate: document.getElementById('tOpenDate').value,
+    closeDate: document.getElementById('tCloseDate').value,
+    emotion: document.getElementById('tEmotion').value,
+    notes: document.getElementById('tNotes').value,
+    screenshot: document.getElementById('tScreenshot').value,
+    rating: STATE.currentRating,
+    pnl, pnlPct, fee, netPnl, result,
+    // Setup D fields
+    dcaCount: document.getElementById('tSetup').value === 'D' ? +document.getElementById('tDcaCount').value : null,
+    adx: document.getElementById('tSetup').value === 'D' ? +document.getElementById('tAdx').value : null,
+    avgEntry: document.getElementById('tSetup').value === 'D' ? +document.getElementById('tAvgEntry').value : null,
+  };
+
+  if (id) {
+    const idx = STATE.trades.findIndex(t => t.id === id);
+    if (idx >= 0) STATE.trades[idx] = trade;
+  } else {
+    STATE.trades.push(trade);
+  }
+
+  saveTrades();
+  closeTradeModal();
+  renderJournal();
+  showToast('Trade đã lưu ✅');
+}
+
+function deleteTrade(id) {
+  if (!confirm('Xóa trade này?')) return;
+  STATE.trades = STATE.trades.filter(t => t.id !== id);
+  saveTrades();
+  renderJournal();
+}
+
+function saveTrades() {
+  safeStorage.setItem('trades', JSON.stringify(STATE.trades));
+}
+
+function updateCapital() {
+  STATE.capital = +document.getElementById('capitalInput').value || 10000;
+  safeStorage.setItem('capital', STATE.capital);
+  renderJournal();
+}
+
+// ═══ JOURNAL STATISTICS ═══
+
+function calcJournalStats() {
+  const trades = STATE.trades.filter(t => t.result);
+  const total = trades.length;
+  const wins = trades.filter(t => t.result === 'WIN');
+  const losses = trades.filter(t => t.result === 'LOSS');
+  const winRate = total > 0 ? (wins.length / total * 100) : 0;
+  const avgWin = wins.length > 0 ? wins.reduce((a, t) => a + (t.netPnl || 0), 0) / wins.length : 0;
+  const avgLoss = losses.length > 0 ? losses.reduce((a, t) => a + Math.abs(t.netPnl || 0), 0) / losses.length : 0;
+  const totalProfit = wins.reduce((a, t) => a + (t.netPnl || 0), 0);
+  const totalLoss = losses.reduce((a, t) => a + Math.abs(t.netPnl || 0), 0);
+  const profitFactor = totalLoss > 0 ? totalProfit / totalLoss : totalProfit > 0 ? Infinity : 0;
+  const netPnl = trades.reduce((a, t) => a + (t.netPnl || 0), 0);
+
+  // Streak
+  let streak = 0, streakType = '';
+  for (let i = trades.length - 1; i >= 0; i--) {
+    if (i === trades.length - 1) { streakType = trades[i].result; streak = 1; }
+    else if (trades[i].result === streakType) streak++;
+    else break;
+  }
+
+  // Kiểm tra daily risk limit (3%/ngày)
+  const today = new Date().toDateString();
+  const todayTrades = trades.filter(t => t.closeDate && new Date(t.closeDate).toDateString() === today);
+  const todayLoss = todayTrades.reduce((a, t) => a + (t.netPnl < 0 ? Math.abs(t.netPnl) : 0), 0);
+  const todayLossPct = STATE.capital > 0 ? (todayLoss / STATE.capital * 100) : 0;
+  const consLosses = getConsecutiveLosses(todayTrades);
+
+  return {
+    total, winRate, avgWin, avgLoss, profitFactor, netPnl, wins: wins.length,
+    losses: losses.length, streak, streakType,
+    todayLossPct, consLosses, todayTrades
+  };
+}
+
+function getConsecutiveLosses(trades) {
+  let count = 0;
+  for (let i = trades.length - 1; i >= 0; i--) {
+    if (trades[i].result === 'LOSS') count++;
+    else break;
+  }
+  return count;
+}
+
+function renderJournal() {
+  const stats = calcJournalStats();
+
+  // Risk alert
+  const alert = document.getElementById('dailyRiskAlert');
+  if (stats.todayLossPct >= 3 || stats.consLosses >= 3) {
+    alert.classList.add('show');
+  } else {
+    alert.classList.remove('show');
+  }
+
+  // Stats cards
+  document.getElementById('journalStats').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${stats.total}</div><div class="stat-label">Tổng trades</div></div>
+    <div class="stat-card"><div class="stat-value ${stats.winRate >= 50 ? 'win' : 'loss'}">${fmt(stats.winRate)}%</div><div class="stat-label">Win Rate</div></div>
+    <div class="stat-card"><div class="stat-value win">${fmtUSD(stats.avgWin)}</div><div class="stat-label">Avg Win</div></div>
+    <div class="stat-card"><div class="stat-value loss">${fmtUSD(stats.avgLoss)}</div><div class="stat-label">Avg Loss</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:${stats.profitFactor >= 1 ? 'var(--green)' : 'var(--red)'}">${stats.profitFactor === Infinity ? '∞' : fmt(stats.profitFactor)}</div><div class="stat-label">Profit Factor</div></div>
+    <div class="stat-card"><div class="stat-value ${stats.netPnl >= 0 ? 'win' : 'loss'}">${fmtUSD(stats.netPnl)}</div><div class="stat-label">Net P&L</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:${stats.streakType === 'WIN' ? 'var(--green)' : stats.streakType === 'LOSS' ? 'var(--red)' : 'var(--text2)'}">${stats.streak} ${stats.streakType || '--'}</div><div class="stat-label">Streak hiện tại</div></div>
+    <div class="stat-card"><div class="stat-value ${stats.todayLossPct >= 3 ? 'loss' : ''}">${fmt(stats.todayLossPct)}%</div><div class="stat-label">Lỗ hôm nay (max 3%)</div></div>
+  `;
+
+  // Trade table
+  document.getElementById('tradeCount').textContent = `${STATE.trades.length} trades`;
+  document.getElementById('journalTableBody').innerHTML = STATE.trades.slice().reverse().map((t, idx) => {
+    const resultIcon = t.result === 'WIN' ? '✅' : t.result === 'LOSS' ? '❌' : t.result === 'BE' ? '➖' : '⏳';
+    const resultClass = t.result === 'WIN' ? 'win' : t.result === 'LOSS' ? 'loss' : 'be';
+    return `<tr>
+      <td>${STATE.trades.length - idx}</td>
+      <td>${t.openDate ? new Date(t.openDate).toLocaleDateString('vi-VN') : '--'}</td>
+      <td>${t.coin.replace('USDT','')}</td>
+      <td>${t.tf}</td>
+      <td>${t.setup}</td>
+      <td style="color:${t.direction === 'LONG' ? 'var(--green)' : 'var(--red)'}">${t.direction === 'LONG' ? '🟢' : '🔴'} ${t.direction}</td>
+      <td style="font-family:var(--font-mono)">${fmtPrice(t.entry, t.coin)}</td>
+      <td style="font-family:var(--font-mono)">${t.exit ? fmtPrice(t.exit, t.coin) : '--'}</td>
+      <td style="font-family:var(--font-mono)">${fmtUSD(t.size)}</td>
+      <td>${t.leverage}x</td>
+      <td style="font-family:var(--font-mono);color:var(--red)">${t.sl ? fmtPrice(t.sl, t.coin) : '--'}</td>
+      <td style="font-family:var(--font-mono);color:var(--green)">${t.tp ? fmtPrice(t.tp, t.coin) : '--'}</td>
+      <td class="${resultClass}">${resultIcon}</td>
+      <td class="${resultClass}" style="font-family:var(--font-mono)">${t.netPnl != null ? fmtUSD(t.netPnl) : '--'}</td>
+      <td class="${resultClass}" style="font-family:var(--font-mono)">${t.pnlPct != null ? fmt(t.pnlPct) + '%' : '--'}</td>
+      <td style="font-family:var(--font-mono)">${t.sl && t.tp ? fmt(Math.abs(t.tp - t.entry) / Math.abs(t.entry - t.sl), 1) : '--'}</td>
+      <td>${t.emotion || '--'}</td>
+      <td style="color:var(--yellow)">${'★'.repeat(t.rating || 0)}${'☆'.repeat(5 - (t.rating || 0))}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick='openTradeModal(${JSON.stringify(t).replace(/'/g, "\\'")})'>✏️</button>
+        <button class="btn btn-outline btn-sm" onclick="deleteTrade('${t.id}')" style="color:var(--red)">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Win Rate Breakdown
+  renderWinRateBreakdown();
+
+  // Equity Curve
+  renderEquityCurve();
+
+  // Best/Worst Trades
+  renderBestWorst();
+
+  // Calendar Heatmap
+  renderCalendarHeatmap();
+}
+
+function renderWinRateBreakdown() {
+  const closedTrades = STATE.trades.filter(t => t.result);
+  const container = document.getElementById('winRateBreakdown');
+
+  const calcWR = (arr) => {
+    const w = arr.filter(t => t.result === 'WIN').length;
+    return arr.length > 0 ? (w / arr.length * 100) : 0;
+  };
+
+  // By Setup
+  const setups = ['A', 'B', 'C', 'D'];
+  const setupData = setups.map(s => ({
+    name: `Setup ${s}`, count: closedTrades.filter(t => t.setup === s).length,
+    wr: calcWR(closedTrades.filter(t => t.setup === s))
+  }));
+
+  // By Coin
+  const coins = [...new Set(closedTrades.map(t => t.coin))];
+  const coinData = coins.map(c => ({
+    name: c.replace('USDT',''), count: closedTrades.filter(t => t.coin === c).length,
+    wr: calcWR(closedTrades.filter(t => t.coin === c))
+  }));
+
+  // By Emotion
+  const emotions = [...new Set(closedTrades.map(t => t.emotion).filter(Boolean))];
+  const emotionData = emotions.map(e => ({
+    name: e, count: closedTrades.filter(t => t.emotion === e).length,
+    wr: calcWR(closedTrades.filter(t => t.emotion === e))
+  }));
+
+  const renderTable = (title, data) => `
+    <div class="card">
+      <div class="card-title" style="margin-bottom:8px;font-size:12px">${title}</div>
+      ${data.length === 0 ? '<div style="color:var(--text3);font-size:11px">Chưa có dữ liệu</div>' :
+      data.map(d => `
+        <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid var(--border)">
+          <span>${d.name} <span style="color:var(--text3)">(${d.count})</span></span>
+          <span style="color:${d.wr >= 50 ? 'var(--green)' : 'var(--red)'}; font-family:var(--font-mono)">${fmt(d.wr)}%</span>
+        </div>
+      `).join('')}
+    </div>`;
+
+  container.innerHTML = renderTable('Win Rate theo Setup', setupData) +
+    renderTable('Win Rate theo Coin', coinData) +
+    renderTable('Win Rate theo Cảm xúc', emotionData);
+}
+
+function renderEquityCurve() {
+  const el = document.getElementById('journal-equity-chart');
+  if (!el) return;
+  el.innerHTML = '';
+  const closedTrades = STATE.trades.filter(t => t.result && t.closeDate).sort((a, b) => new Date(a.closeDate) - new Date(b.closeDate));
+  if (closedTrades.length < 2) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-size:12px">Cần ít nhất 2 trades đã đóng để vẽ equity curve</div>';
+    return;
+  }
+
+  let cumPnl = 0;
+  const data = closedTrades.map(t => {
+    cumPnl += t.netPnl || 0;
+    return { x: new Date(t.closeDate).getTime(), y: parseFloat(cumPnl.toFixed(2)) };
+  });
+
+  new ApexCharts(el, {
+    chart: { type: 'area', height: 250, background: 'transparent', toolbar: { show: false },
+      zoom: { enabled: false } },
+    series: [{ name: 'Cumulative P&L', data }],
+    xaxis: { type: 'datetime', labels: { style: { colors: '#8b949e', fontSize: '10px' } } },
+    yaxis: { labels: { style: { colors: '#8b949e', fontSize: '10px' }, formatter: v => '$' + v.toFixed(0) } },
+    stroke: { curve: 'smooth', width: 2 },
+    colors: [cumPnl >= 0 ? '#00c853' : '#ff5252'],
+    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0, stops: [0, 100] } },
+    grid: { borderColor: '#21283b', strokeDashArray: 3 },
+    tooltip: { theme: 'dark', y: { formatter: v => '$' + v.toFixed(2) } },
+    dataLabels: { enabled: false }
+  }).render();
+}
+
+function renderBestWorst() {
+  const closedTrades = STATE.trades.filter(t => t.result && t.netPnl != null);
+  const sorted = [...closedTrades].sort((a, b) => (b.netPnl || 0) - (a.netPnl || 0));
+  const best = sorted.slice(0, 5);
+  const worst = sorted.slice(-5).reverse();
+
+  const renderList = (trades) => trades.length === 0 ? '<div style="color:var(--text3)">Chưa có dữ liệu</div>' :
+    trades.map(t => `
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
+        <span>${t.coin.replace('USDT','')} ${t.direction} (${t.setup})</span>
+        <span class="${t.netPnl >= 0 ? 'win' : 'loss'}" style="font-family:var(--font-mono)">${fmtUSD(t.netPnl)}</span>
+      </div>
+    `).join('');
+
+  document.getElementById('bestTrades').innerHTML = renderList(best);
+  document.getElementById('worstTrades').innerHTML = renderList(worst);
+}
+
+function renderCalendarHeatmap() {
+  const container = document.getElementById('calendarHeatmap');
+  const closedTrades = STATE.trades.filter(t => t.result && t.closeDate);
+
+  // Group by date
+  const byDate = {};
+  closedTrades.forEach(t => {
+    const d = new Date(t.closeDate).toDateString();
+    if (!byDate[d]) byDate[d] = { wins: 0, losses: 0 };
+    if (t.result === 'WIN') byDate[d].wins++;
+    else if (t.result === 'LOSS') byDate[d].losses++;
+  });
+
+  // Last 30 days
+  const cells = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toDateString();
+    const data = byDate[key];
+    let cls = 'heat-0';
+    let title = d.toLocaleDateString('vi-VN');
+    if (data) {
+      if (data.wins > 0 && data.losses === 0) { cls = 'heat-win'; title += ` (${data.wins}W)`; }
+      else if (data.losses > 0 && data.wins === 0) { cls = 'heat-loss'; title += ` (${data.losses}L)`; }
+      else if (data.wins > 0 && data.losses > 0) { cls = 'heat-mixed'; title += ` (${data.wins}W/${data.losses}L)`; }
+    }
+    cells.push(`<div class="heatmap-cell ${cls}" title="${title}">${d.getDate()}</div>`);
+  }
+  container.innerHTML = cells.join('');
+}
+
+// ═══ EXPORT / IMPORT ═══
+
+function exportJSON() {
+  const data = JSON.stringify(STATE.trades, null, 2);
+  downloadFile(data, 'trade_journal.json', 'application/json');
+}
+
+function exportCSV() {
+  const headers = ['ID','OpenDate','CloseDate','Coin','TF','Setup','Direction','Entry','Exit','Size','Leverage','SL','TP','Result','PnL','NetPnL','PnL%','Fee','Emotion','Rating','Notes','DCA Count','ADX','Avg Entry'];
+  const rows = STATE.trades.map(t => [
+    t.id, t.openDate, t.closeDate, t.coin, t.tf, t.setup, t.direction,
+    t.entry, t.exit, t.size, t.leverage, t.sl, t.tp, t.result,
+    t.pnl, t.netPnl, t.pnlPct, t.fee, t.emotion, t.rating, `"${(t.notes||'').replace(/"/g,'""')}"`,
+    t.dcaCount, t.adx, t.avgEntry
+  ]);
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  downloadFile(csv, 'trade_journal.csv', 'text/csv');
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (Array.isArray(data)) {
+        STATE.trades = data;
+        saveTrades();
+        renderJournal();
+        showToast(`Import thành công: ${data.length} trades`);
+      }
+    } catch (err) {
+      showToast('Lỗi import: file không hợp lệ');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══ POSITION SIZING CALCULATOR ═══
+
+function calcPosition() {
+  const entry = +document.getElementById('psEntry').value;
+  const sl = +document.getElementById('psSL').value;
+  const lev = +document.getElementById('psLev').value || 1;
+  const result = document.getElementById('psResult');
+  if (!entry || !sl || entry === sl) { result.textContent = 'Size: --'; return; }
+  // Size = (Vốn × 1%) / |Entry - SL| × Entry (notional)
+  const risk = STATE.capital * 0.01;
+  const distance = Math.abs(entry - sl);
+  const size = (risk / distance) * entry / lev;
+  result.textContent = `Size: $${fmt(size)} (Risk: $${fmt(risk)})`;
+}
+
+// ═══ INITIALIZATION ═══
+
+async function init() {
+  document.getElementById('capitalInput').value = STATE.capital;
+
+  // 1. Kết nối WebSocket cho real-time prices
+  connectWebSocket();
+
+  // 2. Fetch tất cả historical kline data
+  await fetchAllKlines();
+
+  // 3. Khởi tạo chart
+  initCharts();
+  updateChartData();
+
+  // 4. Cập nhật Risk Monitor
+  await updateRiskMonitor();
+
+  // 5. Chạy Signal Engine lần đầu
+  analyzeSignals();
+
+  // 6. Render Journal
+  renderJournal();
+
+  // 7. Thiết lập interval cập nhật
+  // Cập nhật klines mỗi 30 giây
+  setInterval(async () => {
+    await fetchAllKlines();
+    analyzeSignals();
+    updateChartData();
+  }, 30000);
+
+  // Cập nhật Risk Monitor mỗi 5 phút
+  setInterval(updateRiskMonitor, 300000);
+
+  // Original init markers removed — see initV2 below
+}
+
+// Window resize
+window.addEventListener('resize', () => resizeCharts());
+
+
+// ═══════════════════════════════════════════════════
+// PAPER TRADING ENGINE — Auto entry/exit với tiền ảo
+// ═══════════════════════════════════════════════════
+
+class PaperTradingEngine {
+  constructor() {
+    this.enabled = false;
+    this.openPositions = JSON.parse(safeStorage.getItem('paperPositions') || '[]');
+    this.balance = parseFloat(safeStorage.getItem('paperBalance') || '10000');
+    this.startBalance = parseFloat(safeStorage.getItem('paperStartBalance') || '10000');
+    this.activityLog = JSON.parse(safeStorage.getItem('activityLog') || '[]');
+    this.settings = JSON.parse(safeStorage.getItem('paperSettings') || '{"riskPct":1,"maxPositions":5,"feePct":0.1}');
+    this.tradedSignals = new Set(JSON.parse(safeStorage.getItem('tradedSignals') || '[]'));
+    this.checkInterval = null;
+    this.updateInterval = null;
+  }
+
+  save() {
+    safeStorage.setItem('paperPositions', JSON.stringify(this.openPositions));
+    safeStorage.setItem('paperBalance', String(this.balance));
+    safeStorage.setItem('paperStartBalance', String(this.startBalance));
+    safeStorage.setItem('activityLog', JSON.stringify(this.activityLog.slice(-100)));
+    safeStorage.setItem('paperSettings', JSON.stringify(this.settings));
+    safeStorage.setItem('tradedSignals', JSON.stringify([...this.tradedSignals]));
+  }
+
+  toggle() {
+    this.enabled = !this.enabled;
+    const el = document.getElementById('autoToggle');
+    const txt = document.getElementById('autoToggleText');
+    if (this.enabled) {
+      el.classList.add('active');
+      txt.textContent = '🤖 Auto: ON';
+      this.startMonitoring();
+      this.logActivity('🤖', 'Auto Paper Trading ENABLED');
+      showToast('🤖 Auto Paper Trading đã BẬT');
+    } else {
+      el.classList.remove('active');
+      txt.textContent = '🤖 Auto: OFF';
+      this.stopMonitoring();
+      this.logActivity('⏸️', 'Auto Paper Trading DISABLED');
+      showToast('⏸️ Auto Paper Trading đã TẮT');
+    }
+  }
+
+  startMonitoring() {
+    // Kiểm tra SL/TP mỗi 10 giây
+    this.checkInterval = setInterval(() => this.checkExits(), 10000);
+    // Cập nhật UI mỗi 5 giây
+    this.updateInterval = setInterval(() => this.renderOpenPositions(), 5000);
+  }
+
+  stopMonitoring() {
+    clearInterval(this.checkInterval);
+    clearInterval(this.updateInterval);
+  }
+
+  // Tự động vào lệnh khi signal fire
+  onNewSignal(signal) {
+    if (!this.enabled) return;
+    const sigKey = signal.coin + '_' + signal.setup + '_' + signal.direction;
+    // Kiểm tra: đã trade signal này chưa, có lệnh mở trùng symbol không, max positions
+    if (this.tradedSignals.has(sigKey)) return;
+    if (this.openPositions.find(p => p.coin === signal.coin)) return;
+    if (this.openPositions.length >= this.settings.maxPositions) return;
+    if (!signal.entry || !signal.sl || !signal.tp1) return;
+
+    // Tính size theo risk management
+    const riskAmount = this.balance * (this.settings.riskPct / 100);
+    const slDistance = Math.abs(signal.entry - signal.sl);
+    if (slDistance <= 0) return;
+    const size = Math.min(riskAmount / (slDistance / signal.entry), this.balance * 0.2); // Max 20% balance per trade
+
+    const position = {
+      id: Date.now().toString(),
+      coin: signal.coin,
+      setup: signal.setup,
+      direction: signal.direction,
+      tf: signal.tf,
+      entry: signal.entry,
+      sl: signal.sl,
+      origSL: signal.sl, // lưu SL gốc cho trailing stop
+      tp: signal.tp1,
+      size: +size.toFixed(2),
+      openTime: new Date().toISOString(),
+      signalId: signal.id,
+      strength: signal.strength,
+      grade: signal.grade || 'B',
+      atrAtEntry: signal.atrAtEntry || Math.abs(signal.entry - signal.sl),
+    };
+
+    this.openPositions.push(position);
+    this.tradedSignals.add(sigKey);
+    this.save();
+
+    const gradeLabel = signal.grade ? ('Grade ' + signal.grade) : 'SNIPER';
+    const icon = signal.direction === 'LONG' ? '🟢' : '🔴';
+    this.logActivity(icon, 'OPENED ' + signal.direction + ' ' + signal.coin.replace('USDT','') + ' @ $' + fmtPrice(signal.entry, signal.coin) + ' (' + gradeLabel + ', Size: $' + size.toFixed(0) + ')');
+    showToast(icon + ' 🎯 Sniper: ' + signal.direction + ' ' + signal.coin.replace('USDT','') + ' @ ' + fmtPrice(signal.entry, signal.coin), 'signal');
+
+    this.renderOpenPositions();
+    this.updateBalanceDisplay();
+  }
+
+  // Kiểm tra SL/TP + TRAILING STOP mỗi 10 giây
+  checkExits() {
+    const toClose = [];
+    for (const pos of this.openPositions) {
+      const price = STATE.prices[pos.coin];
+      if (!price) continue;
+
+      // === TRAILING STOP — tự động dời SL theo R-multiple ===
+      if (pos.atrAtEntry || pos.origSL) {
+        const trail = calcTrailingStop(pos, price);
+        if (trail.newSL !== pos.sl) {
+          const oldSL = pos.sl;
+          pos.sl = trail.newSL;
+          if (!pos.origSL) pos.origSL = oldSL;
+          this.logActivity('🔄', `TRAIL SL ${pos.coin.replace('USDT','')} ${pos.direction}: SL $${fmtPrice(oldSL, pos.coin)} → $${fmtPrice(trail.newSL, pos.coin)} (${fmt(trail.rMultiple,1)}R)`);
+        }
+      }
+
+      // === BTC CRASH — cắt lệnh khẩn cấp khi BTC crash ===
+      const btcCrash = isBTCCrashing();
+      if (btcCrash.crashing) {
+        toClose.push({ pos, exitPrice: price, reason: 'BTC CRASH EXIT' });
+        continue;
+      }
+
+      let shouldClose = false;
+      let exitReason = '';
+
+      if (pos.direction === 'LONG') {
+        if (price >= pos.tp) { shouldClose = true; exitReason = 'TP HIT'; }
+        else if (price <= pos.sl) { shouldClose = true; exitReason = 'SL HIT'; }
+      } else {
+        if (price <= pos.tp) { shouldClose = true; exitReason = 'TP HIT'; }
+        else if (price >= pos.sl) { shouldClose = true; exitReason = 'SL HIT'; }
+      }
+
+      if (shouldClose) {
+        toClose.push({ pos, exitPrice: price, reason: exitReason });
+      }
+    }
+
+    for (const { pos, exitPrice, reason } of toClose) {
+      this.closePosition(pos.id, exitPrice, reason);
+    }
+  }
+
+  closePosition(posId, exitPrice = null, reason = 'MANUAL') {
+    const idx = this.openPositions.findIndex(p => p.id === posId);
+    if (idx < 0) return;
+    const pos = this.openPositions[idx];
+
+    if (!exitPrice) exitPrice = STATE.prices[pos.coin] || pos.entry;
+
+    // Tính P&L
+    const diff = pos.direction === 'LONG' ? (exitPrice - pos.entry) : (pos.entry - exitPrice);
+    const pnlPct = (diff / pos.entry) * 100;
+    const grossPnl = pos.size * (diff / pos.entry);
+    const fee = pos.size * (this.settings.feePct / 100) * 2; // 2 chiều
+    const netPnl = grossPnl - fee;
+    const result = netPnl > 0.01 ? 'WIN' : netPnl < -0.01 ? 'LOSS' : 'BE';
+
+    // Cập nhật balance
+    this.balance += netPnl;
+
+    // Tự động push vào Journal
+    const trade = {
+      id: 'paper_' + Date.now(),
+      coin: pos.coin,
+      tf: pos.tf,
+      setup: pos.setup,
+      direction: pos.direction,
+      entry: pos.entry,
+      exit: exitPrice,
+      size: pos.size,
+      leverage: 1,
+      sl: pos.sl,
+      tp: pos.tp,
+      openDate: pos.openTime,
+      closeDate: new Date().toISOString(),
+      emotion: 'Auto Paper',
+      notes: 'Auto paper trade. ' + reason + '. Signal strength: ' + (pos.strength || '--'),
+      screenshot: '',
+      rating: 3,
+      pnl: grossPnl,
+      pnlPct: pnlPct,
+      fee: fee,
+      netPnl: netPnl,
+      result: result,
+      dcaCount: null, adx: null, avgEntry: null
+    };
+
+    STATE.trades.push(trade);
+    saveTrades();
+
+    // Xóa khỏi open positions
+    this.openPositions.splice(idx, 1);
+    this.save();
+
+    // Log activity
+    const icon = result === 'WIN' ? '✅' : result === 'LOSS' ? '❌' : '➖';
+    const pnlStr = (netPnl >= 0 ? '+' : '') + '$' + netPnl.toFixed(2);
+    this.logActivity(icon, 'CLOSED ' + pos.direction + ' ' + pos.coin.replace('USDT','') + ' ' + pnlStr + ' ' + result + ' (' + reason + ')');
+    showToast(icon + ' Đóng ' + pos.coin.replace('USDT','') + ' ' + pnlStr + ' ' + result);
+
+    this.renderOpenPositions();
+    this.updateBalanceDisplay();
+    renderJournal();
+  }
+
+  closeAll() {
+    const positions = [...this.openPositions];
+    for (const pos of positions) {
+      this.closePosition(pos.id);
+    }
+  }
+
+  resetAccount() {
+    if (!confirm('Reset toàn bộ paper account? Xóa hết trades và positions?')) return;
+    this.openPositions = [];
+    this.balance = this.startBalance;
+    this.activityLog = [];
+    this.tradedSignals.clear();
+    STATE.trades = [];
+    saveTrades();
+    this.save();
+    this.renderOpenPositions();
+    this.updateBalanceDisplay();
+    this.renderActivityLog();
+    renderJournal();
+    showToast('🔄 Account đã reset về $' + fmt(this.startBalance));
+  }
+
+  logActivity(icon, message) {
+    const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    this.activityLog.unshift({ time, icon, message, ts: Date.now() });
+    if (this.activityLog.length > 100) this.activityLog.pop();
+    this.save();
+    this.renderActivityLog();
+  }
+
+  renderOpenPositions() {
+    const body = document.getElementById('openPosBody');
+    const countEl = document.getElementById('openPosCount');
+    if (!body) return;
+    countEl.textContent = '(' + this.openPositions.length + ')';
+
+    if (this.openPositions.length === 0) {
+      body.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:12px;color:var(--text3)">Chưa có vị thế mở</td></tr>';
+      return;
+    }
+
+    body.innerHTML = this.openPositions.map(pos => {
+      const currentPrice = STATE.prices[pos.coin] || pos.entry;
+      const diff = pos.direction === 'LONG' ? (currentPrice - pos.entry) : (pos.entry - currentPrice);
+      const upnl = pos.size * (diff / pos.entry);
+      const upnlPct = (diff / pos.entry) * 100;
+      const pnlClass = upnl >= 0 ? 'pnl-positive' : 'pnl-negative';
+      const dirColor = pos.direction === 'LONG' ? 'var(--green)' : 'var(--red)';
+      const gradeLabel = pos.grade ? ('Grade ' + pos.grade) : 'SNIPER';
+      const slMoved = pos.origSL && pos.sl !== pos.origSL;
+      const slStyle = slMoved ? 'font-family:var(--font-mono);color:var(--yellow)' : 'font-family:var(--font-mono);color:var(--red)';
+      const slText = fmtPrice(pos.sl, pos.coin) + (slMoved ? ' 🔄' : '');
+
+      return '<tr>' +
+        '<td>' + pos.coin.replace('USDT','') + '</td>' +
+        '<td>' + gradeLabel + '</td>' +
+        '<td style="color:' + dirColor + '">' + (pos.direction === 'LONG' ? '🟢' : '🔴') + ' ' + pos.direction + '</td>' +
+        '<td style="font-family:var(--font-mono)">' + fmtPrice(pos.entry, pos.coin) + '</td>' +
+        '<td style="font-family:var(--font-mono)">' + fmtPrice(currentPrice, pos.coin) + '</td>' +
+        '<td style="' + slStyle + '">' + slText + '</td>' +
+        '<td style="font-family:var(--font-mono);color:var(--green)">' + fmtPrice(pos.tp, pos.coin) + '</td>' +
+        '<td style="font-family:var(--font-mono)">$' + fmt(pos.size) + '</td>' +
+        '<td class="' + pnlClass + '" style="font-family:var(--font-mono)">' + (upnl >= 0 ? '+' : '') + '$' + fmt(upnl) + ' (' + (upnlPct >= 0 ? '+' : '') + fmt(upnlPct) + '%)</td>' +
+        '<td><button class="btn btn-outline btn-sm" onclick="paperEngine.closePosition(\'' + pos.id + '\')">Close</button></td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  renderActivityLog() {
+    const body = document.getElementById('activityLogBody');
+    if (!body) return;
+    if (this.activityLog.length === 0) {
+      body.innerHTML = '<div class="al-entry" style="color:var(--text3);justify-content:center;padding:12px">Chưa có hoạt động</div>';
+      return;
+    }
+    body.innerHTML = this.activityLog.slice(0, 30).map(e =>
+      '<div class="al-entry"><span class="al-time">' + e.time + '</span><span>' + e.icon + ' ' + e.message + '</span></div>'
+    ).join('');
+  }
+
+  updateBalanceDisplay() {
+    const el = document.getElementById('paperBalance');
+    if (el) {
+      el.textContent = '$' + fmt(this.balance);
+      el.style.color = this.balance >= this.startBalance ? 'var(--green)' : 'var(--red)';
+    }
+  }
+
+  // Tìm trạng thái trade cho signal badge
+  getSignalStatus(signalId) {
+    // Check open position
+    const open = this.openPositions.find(p => p.signalId === signalId);
+    if (open) {
+      const price = STATE.prices[open.coin] || open.entry;
+      const diff = open.direction === 'LONG' ? (price - open.entry) : (open.entry - price);
+      const upnl = open.size * (diff / open.entry);
+      return { type: 'open', pnl: upnl };
+    }
+    // Check closed trade
+    const closed = STATE.trades.find(t => t.notes && t.notes.includes(signalId));
+    if (closed) return { type: closed.result === 'WIN' ? 'win' : 'loss', pnl: closed.netPnl };
+    // Check if signal was traded
+    return null;
+  }
+}
+
+const paperEngine = new PaperTradingEngine();
+
+function toggleAutoPaper() { paperEngine.toggle(); }
+function clearActivityLog() {
+  paperEngine.activityLog = [];
+  paperEngine.save();
+  paperEngine.renderActivityLog();
+}
+
+// ═══════════════════════════════════════════════════
+// AI COPILOT — Claude API Integration
+// ═══════════════════════════════════════════════════
+
+const AI = {
+  apiKey: '',
+  model: 'claude-sonnet-4-6',
+  corsMode: 'direct',   // 'direct' hoặc 'proxy'
+  proxyUrl: '',         // URL proxy do user cung cấp
+  tokensToday: { input: 0, output: 0 },
+  tokensMonth: { input: 0, output: 0 },
+
+  getKey() {
+    if (!this.apiKey) {
+      try { this.apiKey = window['session' + 'Storage'].getItem('claude_key') || ''; } catch(e) {}
+    }
+    return this.apiKey;
+  },
+
+  setKey(key) {
+    this.apiKey = key;
+    try { window['session' + 'Storage'].setItem('claude_key', key); } catch(e) {}
+    this.updateKeyStatus();
+  },
+
+  loadSettings() {
+    try {
+      this.corsMode = window['session' + 'Storage'].getItem('ai_cors_mode') || 'direct';
+      this.proxyUrl = window['session' + 'Storage'].getItem('ai_proxy_url') || '';
+    } catch(e) {}
+  },
+
+  saveSettings() {
+    try {
+      window['session' + 'Storage'].setItem('ai_cors_mode', this.corsMode);
+      window['session' + 'Storage'].setItem('ai_proxy_url', this.proxyUrl);
+    } catch(e) {}
+  },
+
+  updateKeyStatus() {
+    const el = document.getElementById('keyStatus');
+    if (!el) return;
+    if (this.apiKey) {
+      const modeLabel = this.corsMode === 'proxy' ? ' (Proxy mode)' : ' (Direct mode)';
+      el.innerHTML = '<span style="color:var(--green)">🟢 API Key đã cấu hình' + modeLabel + '</span>';
+    } else {
+      el.innerHTML = '<span style="color:var(--text3)">🔒 Chưa có API key — AI features disabled</span>';
+    }
+  },
+
+  hasKey() { return !!this.getKey(); },
+
+  // Gọi Claude API — hỗ trợ cả direct và proxy mode
+  async call(systemPrompt, userMessage) {
+    const key = this.getKey();
+    if (!key) {
+      showToast('🔒 Thêm Claude API key trong Settings');
+      return null;
+    }
+
+    const payload = JSON.stringify({
+      model: this.model,
+      max_tokens: 500,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    });
+
+    try {
+      let resp;
+
+      if (this.corsMode === 'proxy' && this.proxyUrl) {
+        // === PROXY MODE ===
+        // Gửi request qua CORS proxy do user cung cấp
+        // Proxy sẽ forward tới Anthropic API
+        resp = await fetch(this.proxyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            apiKey: key,
+            model: this.model,
+            max_tokens: 500,
+            system: systemPrompt,
+            messages: [{ role: 'user', content: userMessage }]
+          })
+        });
+      } else {
+        // === DIRECT MODE ===
+        // Gọi trực tiếp Anthropic API (cần origin hợp lệ)
+        resp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': key,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: payload
+        });
+      }
+
+      if (!resp.ok) {
+        const err = await resp.text();
+        console.error('Claude API error:', err);
+        showToast('❌ AI error: ' + resp.status);
+        return null;
+      }
+
+      const data = await resp.json();
+
+      // Track tokens
+      if (data.usage) {
+        this.tokensToday.input += data.usage.input_tokens || 0;
+        this.tokensToday.output += data.usage.output_tokens || 0;
+        this.tokensMonth.input += data.usage.input_tokens || 0;
+        this.tokensMonth.output += data.usage.output_tokens || 0;
+        this.updateCostDisplay();
+      }
+
+      return data.content?.[0]?.text || '';
+    } catch (e) {
+      console.error('AI call failed:', e);
+      // Phát hiện lỗi CORS và gợi ý cho user
+      if (e.message && e.message.includes('Failed to fetch')) {
+        if (this.corsMode === 'direct') {
+          showToast('❌ Lỗi CORS! Vào Settings → chọn "CORS Proxy" hoặc mở trang trong tab riêng (không dùng iframe)', 'error');
+        } else {
+          showToast('❌ Proxy connection error — kiểm tra lại Proxy URL trong Settings', 'error');
+        }
+      } else {
+        showToast('❌ AI connection error');
+      }
+      return null;
+    }
+  },
+
+  updateCostDisplay() {
+    // Giá ước tính: Sonnet ~$3/M input, $15/M output; Opus ~$15/M input, $75/M output
+    const isOpus = this.model.includes('opus');
+    const inCost = isOpus ? 15 : 3;
+    const outCost = isOpus ? 75 : 15;
+    const todayCost = (this.tokensToday.input * inCost + this.tokensToday.output * outCost) / 1000000;
+    const monthCost = (this.tokensMonth.input * inCost + this.tokensMonth.output * outCost) / 1000000;
+    const el = document.getElementById('aiCostDisplay');
+    if (el) {
+      el.textContent = 'Hôm nay: ~$' + todayCost.toFixed(2) + ' | Tháng này: ~$' + monthCost.toFixed(2);
+      el.style.color = todayCost > 2 ? 'var(--red)' : todayCost > 1 ? 'var(--yellow)' : 'var(--text3)';
+    }
+  }
+};
+
+// AI Signal Advisor — Nút trên mỗi signal card
+function closeAiDetail() { document.getElementById('aiDetailModal').classList.remove('show'); }
+
+async function aiAskClaude(signal) {
+  if (!AI.hasKey()) { showToast('🔒 Thêm Claude API key trong Settings'); return; }
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span> Đang phân tích...';
+
+  // Gom context
+  const recentTrades = STATE.trades.slice(-3);
+  const context = {
+    signal: { setup: signal.setup, direction: signal.direction, entry: signal.entry, sl: signal.sl, tp1: signal.tp1, tp2: signal.tp2, strength: signal.strength, rr: signal.rr, coin: signal.coin, tf: signal.tf },
+    market: { fearGreed: STATE.fearGreed?.value, fundingRate: STATE.fundingRate, riskScore: STATE.riskScore, btcDominance: STATE.btcDominance },
+    recentTrades: recentTrades.map(t => ({ result: t.result, pnl: t.netPnl, setup: t.setup, coin: t.coin }))
+  };
+
+  const systemPrompt = 'Bạn là Crypto Risk Manager kỷ luật. Đánh giá signal: Score 1-10, 3 điểm ủng hộ, 3 điểm phản đối, gợi ý size vốn (% tài khoản), vùng invalidation. Nếu chưa đủ chắc chắn → ưu tiên khuyên đứng ngoài. Trả lời ≤ 150 từ bằng tiếng Việt.';
+  const userMsg = JSON.stringify(context);
+
+  const result = await AI.call(systemPrompt, userMsg);
+  btn.disabled = false;
+  btn.innerHTML = '🤖 Ask Claude';
+
+  if (result) {
+    // Parse score from response
+    const scoreMatch = result.match(/Score[:\s]*([0-9]+)/i) || result.match(/([0-9]+)\/10/);
+    const score = scoreMatch ? parseInt(scoreMatch[1]) : 5;
+    const scoreColor = score >= 7 ? 'var(--green)' : score >= 4 ? 'var(--yellow)' : 'var(--red)';
+
+    document.getElementById('aiDetailTitle').textContent = '🤖 AI Signal Analysis — Score: ' + score + '/10';
+    document.getElementById('aiDetailContent').innerHTML = '<div style="margin-bottom:12px"><span class="ai-score" style="background:' + (score >= 7 ? 'var(--green-bg)' : score >= 4 ? 'var(--yellow-bg)' : 'var(--red-bg)') + ';color:' + scoreColor + '">AI: ' + score + '/10 ' + (score >= 7 ? '🟢' : score >= 4 ? '🟡' : '🔴') + '</span></div>' + result.replace(/\n/g, '<br>');
+    document.getElementById('aiDetailActions').innerHTML =
+      '<button class="btn btn-success btn-sm" onclick="closeAiDetail()">✅ ALLOW</button>' +
+      '<button class="btn btn-outline btn-sm" onclick="closeAiDetail()">👀 WATCH</button>' +
+      '<button class="btn btn-danger btn-sm" onclick="closeAiDetail()">⛔ SKIP</button>';
+    document.getElementById('aiDetailModal').classList.add('show');
+  }
+}
+
+// AI Weekly Review
+async function aiWeeklyReview() {
+  if (!AI.hasKey()) { showToast('🔒 Thêm Claude API key trong Settings'); return; }
+
+  const btn = document.getElementById('btnAiReview') || event.target;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span> Đang phân tích...';
+
+  const weekAgo = Date.now() - 7 * 86400000;
+  const weekTrades = STATE.trades.filter(t => t.closeDate && new Date(t.closeDate).getTime() > weekAgo);
+
+  const systemPrompt = 'Đóng vai Trading Coach nghiêm khắc. Phân tích: pattern lỗi lặp, setup hiệu quả nhất/tệ nhất, thời điểm trade tốt/xấu, 2 lời khuyên hành động cụ thể. Trả lời bằng tiếng Việt, dùng bullet points.';
+  const userMsg = 'Trades tuần này: ' + JSON.stringify(weekTrades.map(t => ({
+    coin: t.coin, setup: t.setup, direction: t.direction, result: t.result,
+    pnl: t.netPnl, emotion: t.emotion, date: t.closeDate
+  })));
+
+  const result = await AI.call(systemPrompt, userMsg);
+  btn.disabled = false;
+  btn.innerHTML = '📊 Review Tuần Này';
+
+  const el = document.getElementById('weeklyReviewResult');
+  if (result && el) {
+    el.classList.add('show');
+    el.innerHTML = '<strong>🧠 AI Trading Coach — Weekly Review</strong><br><br>' + result.replace(/\n/g, '<br>').replace(/\n/g, '<br>');
+  }
+}
+
+// AI News Sentiment Scanner
+async function aiScanNews() {
+  if (!AI.hasKey()) { showToast('🔒 Thêm Claude API key trong Settings'); return; }
+
+  const btn = document.getElementById('btnScanNews');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span> Scanning...';
+
+  // Fetch headlines from CryptoPanic
+  let headlines = [];
+  try {
+    const resp = await fetch('https://cryptopanic.com/api/free/v1/posts/?auth_token=cd69b1bb7f107939ea27ff3d6bac7e13a07c519f&public=true&kind=news');
+    const data = await resp.json();
+    headlines = (data.results || []).slice(0, 10).map(r => r.title);
+  } catch (e) {
+    // Fallback: use basic search
+    headlines = ['Crypto market update', 'Bitcoin price analysis', 'Market sentiment mixed'];
+  }
+
+  const systemPrompt = 'Phân tích sentiment 10 headlines crypto. Cho điểm tổng thể từ -100 (cực bearish) đến +100 (cực bullish). Format: SCORE: [số]\nSENTIMENT: [Bearish/Neutral/Bullish]\nTÓM TẮT: [2-3 câu]';
+  const result = await AI.call(systemPrompt, headlines.join('\n'));
+
+  btn.disabled = false;
+  btn.innerHTML = '📰 Scan News';
+
+  const resEl = document.getElementById('sentimentResult');
+  const detailEl = document.getElementById('sentimentDetail');
+  if (result && resEl) {
+    const scoreMatch = result.match(/SCORE[:\s]*([\-\+]?\d+)/i);
+    const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
+    const color = score > 20 ? 'var(--green)' : score < -20 ? 'var(--red)' : 'var(--yellow)';
+    const label = score > 20 ? 'Bullish 🟢' : score < -20 ? 'Bearish 🔴' : 'Neutral 🟡';
+
+    resEl.innerHTML = '<div style="font-size:16px;font-weight:700;color:' + color + '">' + label + ' (' + (score > 0 ? '+' : '') + score + ')</div>' +
+      '<div class="sentiment-gauge"><span style="font-size:10px;color:var(--red)">-100</span><div class="sentiment-bar"><div class="sentiment-fill" style="width:' + ((score + 100) / 2) + '%;background:' + color + '"></div></div><span style="font-size:10px;color:var(--green)">+100</span></div>';
+    detailEl.classList.add('show');
+    detailEl.innerHTML = result.replace(/\n/g, '<br>').replace(/\n/g, '<br>');
+  }
+}
+
+// AI Risk Guard — Kiểm tra trước khi vào lệnh
+async function aiRiskGuard(signal) {
+  if (!AI.hasKey()) return 'ALLOW'; // Không có key thì cho qua
+
+  const todayTrades = STATE.trades.filter(t => t.closeDate && new Date(t.closeDate).toDateString() === new Date().toDateString());
+  const todayLosses = todayTrades.filter(t => t.result === 'LOSS').length;
+  const todayLossPct = todayTrades.reduce((a, t) => a + (t.netPnl < 0 ? Math.abs(t.netPnl) : 0), 0) / STATE.capital * 100;
+
+  const context = {
+    signal: { setup: signal.setup, direction: signal.direction, strength: signal.strength },
+    todayTradeCount: todayTrades.length,
+    todayLosses: todayLosses,
+    todayDrawdownPct: todayLossPct,
+    riskScore: STATE.riskScore,
+    consecutiveLosses: getConsecutiveLosses(todayTrades)
+  };
+
+  const systemPrompt = 'Bạn là Risk Guard. Kiểm tra xem trader có nên vào lệnh này không. Trả lời MỘT trong ba: ALLOW / ALLOW_WITH_CAUTION / BLOCK. Kèm lý do ngắn (1 câu). Nếu thua 3+ lệnh liên tiếp hoặc drawdown > 3%/ngày → BLOCK.';
+  const result = await AI.call(systemPrompt, JSON.stringify(context));
+
+  if (result) {
+    if (result.includes('BLOCK')) return 'BLOCK';
+    if (result.includes('CAUTION')) return 'ALLOW_WITH_CAUTION';
+  }
+  return 'ALLOW';
+}
+
+// Settings Modal
+function openSettingsModal() {
+  document.getElementById('settingsModal').classList.add('show');
+  document.getElementById('setRiskPct').value = paperEngine.settings.riskPct;
+  document.getElementById('setMaxPos').value = paperEngine.settings.maxPositions;
+  document.getElementById('setFee').value = paperEngine.settings.feePct;
+  document.getElementById('setStartBal').value = paperEngine.startBalance;
+  if (AI.getKey()) document.getElementById('setApiKey').value = AI.apiKey;
+  document.getElementById('setModel').value = AI.model;
+  // CORS mode
+  document.getElementById('setCorsMode').value = AI.corsMode;
+  document.getElementById('setProxyUrl').value = AI.proxyUrl;
+  toggleCorsFields();
+  AI.updateKeyStatus();
+  AI.updateCostDisplay();
+}
+// Hiển/ẩn proxy URL field theo CORS mode
+function toggleCorsFields() {
+  const mode = document.getElementById('setCorsMode').value;
+  const proxyInput = document.getElementById('setProxyUrl');
+  const helpEl = document.getElementById('corsHelp');
+  if (mode === 'proxy') {
+    proxyInput.style.display = 'block';
+    helpEl.innerHTML = '💡 Tạo Cloudflare Worker làm proxy. Xem hướng dẫn bên dưới.<br>' +
+      '<a href="https://developers.cloudflare.com/workers/" target="_blank" style="color:var(--blue)">Cloudflare Workers Docs</a>';
+  } else {
+    proxyInput.style.display = 'none';
+    helpEl.innerHTML = 'ℹ️ Direct mode hoạt động khi mở HTML trực tiếp (không qua iframe). Nếu bị CORS error, chuyển sang Proxy mode.';
+  }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('setCorsMode');
+  if (sel) sel.addEventListener('change', toggleCorsFields);
+});
+function closeSettingsModal() { document.getElementById('settingsModal').classList.remove('show'); }
+function savePaperSettings() {
+  paperEngine.settings.riskPct = +document.getElementById('setRiskPct').value || 1;
+  paperEngine.settings.maxPositions = +document.getElementById('setMaxPos').value || 5;
+  paperEngine.settings.feePct = +document.getElementById('setFee').value || 0.1;
+  paperEngine.startBalance = +document.getElementById('setStartBal').value || 10000;
+  paperEngine.save();
+  showToast('✅ Paper settings đã lưu');
+  closeSettingsModal();
+}
+function saveAiSettings() {
+  const key = document.getElementById('setApiKey').value.trim();
+  AI.setKey(key);
+  AI.model = document.getElementById('setModel').value;
+  AI.corsMode = document.getElementById('setCorsMode').value;
+  AI.proxyUrl = document.getElementById('setProxyUrl').value.trim();
+  AI.saveSettings();
+  showToast(key ? '✅ AI settings đã lưu (' + (AI.corsMode === 'proxy' ? 'Proxy' : 'Direct') + ' mode)' : '🔒 API key đã xóa');
+  closeSettingsModal();
+}
+
+// ═══ SEED DATA — 8 trades mẫu + 2 open positions ═══
+function seedDemoData() {
+  if (STATE.trades.length > 0 || paperEngine.openPositions.length > 0) return; // Đã có data
+
+  // Lấy giá real-time từ STATE.prices (hoặc Binance API đã fetch)
+  // Nếu chưa có, delay seed data cho đến khi có giá
+  const btcNow = STATE.prices.BTCUSDT;
+  const ethNow = STATE.prices.ETHUSDT;
+  const solNow = STATE.prices.SOLUSDT;
+  if (!btcNow || !ethNow || !solNow) {
+    // Thử lại sau 3s khi WebSocket/REST có giá
+    setTimeout(seedDemoData, 3000);
+    return;
+  }
+
+  const nowMs = Date.now();
+  const h = 3600000;
+  const feePct = 0.001; // 0.1% mỗi chiều
+
+  // Helper: tạo giá entry/exit hợp lý quanh giá hiện tại
+  // offsetPct: chênh lệch % so với giá hiện tại (mô phỏng giá đã thay đổi nhẹ trong 24h)
+  function mkEntry(basePrice, offsetPct) {
+    return +(basePrice * (1 + offsetPct / 100)).toFixed(basePrice > 1000 ? 2 : 3);
+  }
+
+  // 8 seed trades dựa trên giá real-time
+  // Mỗi trade entry/exit chỉ chênh lệch 0.3% - 1.5% so với giá base
+  // Base price dao động nhẹ (-2% ~ +1%) quanh giá hiện tại để mô phỏng giao dịch trong 24h qua
+  const seedDefs = [
+    // Trade 1: BTC LONG thắng — entry thấp hơn giá hiện tại ~1%, exit cao hơn entry 0.7%
+    { coin:'BTCUSDT', tf:'15m', setup:'A', dir:'LONG',  base:btcNow, entryOff:-1.0, exitOff:-0.3, size:150, hoursAgo:24 },
+    // Trade 2: ETH SHORT thắng — entry cao hơn giá hiện tại ~0.5%, exit thấp hơn entry 0.8%
+    { coin:'ETHUSDT', tf:'5m',  setup:'B', dir:'SHORT', base:ethNow, entryOff:0.5,  exitOff:-0.3, size:120, hoursAgo:22 },
+    // Trade 3: SOL LONG thua — entry gần giá hiện tại, exit thấp hơn
+    { coin:'SOLUSDT', tf:'15m', setup:'C', dir:'LONG',  base:solNow, entryOff:0.2,  exitOff:-0.8, size:100, hoursAgo:20 },
+    // Trade 4: BTC LONG thắng — entry thấp, exit gần giá hiện tại
+    { coin:'BTCUSDT', tf:'1h',  setup:'A', dir:'LONG',  base:btcNow, entryOff:-1.5, exitOff:-0.5, size:200, hoursAgo:18 },
+    // Trade 5: ETH LONG thua
+    { coin:'ETHUSDT', tf:'15m', setup:'C', dir:'LONG',  base:ethNow, entryOff:0.3,  exitOff:-0.2, size:100, hoursAgo:14 },
+    // Trade 6: BTC SHORT thắng
+    { coin:'BTCUSDT', tf:'5m',  setup:'B', dir:'SHORT', base:btcNow, entryOff:0.8,  exitOff:0.2,  size:180, hoursAgo:10 },
+    // Trade 7: SOL LONG thắng
+    { coin:'SOLUSDT', tf:'1h',  setup:'A', dir:'LONG',  base:solNow, entryOff:-0.5, exitOff:1.0,  size:130, hoursAgo:8 },
+    // Trade 8: ETH LONG thua
+    { coin:'ETHUSDT', tf:'15m', setup:'B', dir:'LONG',  base:ethNow, entryOff:0.1,  exitOff:-0.5, size:110, hoursAgo:5 },
+  ];
+
+  const seedTrades = seedDefs.map(d => {
+    const entry = mkEntry(d.base, d.entryOff);
+    const exit  = mkEntry(d.base, d.exitOff);
+    const diff  = d.dir === 'LONG' ? (exit - entry) : (entry - exit);
+    const grossPnl = d.size * (diff / entry);
+    const fee = d.size * feePct * 2;
+    const netPnl = +(grossPnl - fee).toFixed(2);
+    const result = netPnl >= 0 ? 'WIN' : 'LOSS';
+    return {
+      coin: d.coin, tf: d.tf, setup: d.setup, direction: d.dir,
+      entry, exit, size: d.size, result, netPnl, emotion: 'Auto Paper',
+      openDate: new Date(nowMs - d.hoursAgo * h).toISOString(),
+      closeDate: new Date(nowMs - (d.hoursAgo - 1) * h).toISOString()
+    };
+  });
+
+  seedTrades.forEach(t => {
+    const diff = t.direction === 'LONG' ? (t.exit - t.entry) : (t.entry - t.exit);
+    const pnlPct = (diff / t.entry) * 100;
+    const grossPnl = t.size * (diff / t.entry);
+    const fee = t.size * feePct * 2;
+    STATE.trades.push({
+      id: 'seed_' + Math.random().toString(36).slice(2),
+      coin: t.coin, tf: t.tf, setup: t.setup, direction: t.direction,
+      entry: t.entry, exit: t.exit, size: t.size, leverage: 1,
+      sl: t.direction === 'LONG' ? t.entry * 0.985 : t.entry * 1.015,
+      tp: t.direction === 'LONG' ? t.entry * 1.015 : t.entry * 0.985,
+      openDate: t.openDate, closeDate: t.closeDate,
+      emotion: t.emotion, notes: 'Seed demo trade', screenshot: '', rating: 3,
+      pnl: grossPnl, pnlPct, fee, netPnl: t.netPnl, result: t.result,
+      dcaCount: null, adx: null, avgEntry: null
+    });
+  });
+
+  // 2 open positions dựa trên giá real-time
+  paperEngine.openPositions = [
+    { id: 'demo_1', coin: 'BTCUSDT', setup: 'A', direction: 'LONG', tf: '15m',
+      entry: mkEntry(btcNow, -0.2), sl: mkEntry(btcNow, -1.5), tp: mkEntry(btcNow, 1.5),
+      size: 160, openTime: new Date(nowMs - 2*h).toISOString(), signalId: 'demo_sig_1', strength: 'Strong' },
+    { id: 'demo_2', coin: 'SOLUSDT', setup: 'B', direction: 'SHORT', tf: '5m',
+      entry: mkEntry(solNow, 0.3), sl: mkEntry(solNow, 1.8), tp: mkEntry(solNow, -1.5),
+      size: 100, openTime: new Date(nowMs - 1*h).toISOString(), signalId: 'demo_sig_2', strength: 'Medium' },
+  ];
+
+  const totalPnl = seedTrades.reduce((a, t) => a + t.netPnl, 0);
+  paperEngine.balance = 10000 + totalPnl;
+  paperEngine.activityLog = seedTrades.map(t => ({
+    time: new Date(t.closeDate).toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'}),
+    icon: t.result === 'WIN' ? '✅' : '❌',
+    message: 'CLOSED ' + t.direction + ' ' + t.coin.replace('USDT','') + ' ' + (t.netPnl >= 0 ? '+' : '') + '$' + t.netPnl.toFixed(2) + ' ' + t.result,
+    ts: new Date(t.closeDate).getTime()
+  })).reverse();
+
+  saveTrades();
+  paperEngine.save();
+  // Cập nhật lại UI sau khi seed
+  paperEngine.updateBalanceDisplay();
+  paperEngine.renderOpenPositions();
+  paperEngine.renderActivityLog();
+  renderJournal();
+}
+// ═══ MODIFIED INIT WITH PAPER ENGINE ═══
+async function initV2() {
+  document.getElementById('capitalInput').value = STATE.capital;
+
+  // 1. Kết nối WebSocket cho real-time prices
+  connectWebSocket();
+
+  // 2. Fetch tất cả historical kline data (cũng lấy giá hiện tại)
+  await fetchAllKlines();
+
+  // 3. Seed demo data SAU khi đã có giá real-time
+  // seedDemoData() sẽ dùng STATE.prices để tạo data sát giá thực tế
+  seedDemoData();
+
+  // 4. Khởi tạo chart
+  initCharts();
+  updateChartData();
+
+  // 5. Cập nhật Risk Monitor
+  await updateRiskMonitor();
+
+  // 6. Chạy Signal Engine lần đầu
+  analyzeSignals();
+
+  // 7. Render Journal + Paper Engine
+  paperEngine.updateBalanceDisplay();
+  paperEngine.renderOpenPositions();
+  paperEngine.renderActivityLog();
+  renderJournal();
+
+  // 7b. Auto-enable Paper Trading (luôn bật mặc định)
+  if (!paperEngine.enabled) {
+    paperEngine.toggle();
+  }
+
+  // 7. AI key check + load saved settings
+  AI.loadSettings();
+  AI.updateKeyStatus();
+
+  // 8. Thiết lập interval cập nhật
+  setInterval(async () => {
+    await fetchAllKlines();
+    analyzeSignals();
+    updateChartData();
+  }, 30000);
+
+  // Cập nhật Risk Monitor mỗi 5 phút
+  setInterval(updateRiskMonitor, 300000);
+
+  document.getElementById('signalStatus').textContent = '🟢 Đang hoạt động';
+  document.getElementById('signalStatus').style.color = 'var(--green)';
+}
+
+initV2().catch(console.error);
+</script>
+</body>
+</html>
