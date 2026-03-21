@@ -1456,6 +1456,7 @@ function connectWebSocket() {
       const d = msg.data;
       STATE.prevPrices[d.s] = STATE.prices[d.s];
       STATE.prices[d.s] = +d.c;
+      STATE.lastPriceUpdate = Date.now();
       updatePriceBar(d.s, +d.c, +d.P);
     }
   };
@@ -3428,6 +3429,61 @@ async function initV2() {
 
   // Cập nhật Risk Monitor mỗi 5 phút
   setInterval(updateRiskMonitor, 300000);
+
+  // ═══ MOBILE 24/7 — chống Chrome throttle + keep alive ═══
+
+  // A. Wake Lock API — giữ màn hình sáng (không cần Developer Options)
+  let wakeLock = null;
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log('🔒 Wake Lock: Active');
+        wakeLock.addEventListener('release', () => {
+          console.log('🔓 Wake Lock: Released — sẽ tự xin lại');
+        });
+      }
+    } catch (e) { console.log('Wake Lock failed:', e.message); }
+  }
+  requestWakeLock();
+  // Tự xin lại Wake Lock khi tab được focus lại
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') requestWakeLock();
+  });
+
+  // B. Keep-alive ping — khi tab bị throttle, dùng Web Worker để duy trì interval
+  const workerCode = `setInterval(() => postMessage('tick'), 25000);`;
+  const blob = new Blob([workerCode], { type: 'application/javascript' });
+  const keepAliveWorker = new Worker(URL.createObjectURL(blob));
+  keepAliveWorker.onmessage = async () => {
+    // Worker tick mỗi 25s — đảm bảo signal engine vẫn chạy dù tab bị throttle
+    if (document.hidden) {
+      await fetchAllKlines();
+      analyzeSignals();
+    }
+  };
+
+  // C. Auto-reconnect WebSocket khi mất kết nối (WiFi sleep)
+  setInterval(() => {
+    // Kiểm tra nếu giá BTC không cập nhật > 2 phút → reconnect
+    const lastUpdate = STATE.lastPriceUpdate || 0;
+    if (Date.now() - lastUpdate > 120000) {
+      console.log('⚠️ Giá không cập nhật > 2 phút — reconnecting WebSocket...');
+      connectWebSocket();
+    }
+  }, 60000);
+
+  // D. Anti burn-in: nếu chạy > 1 giờ, tự giảm sáng (CSS dimmer overlay)
+  setTimeout(() => {
+    if (!document.getElementById('burnInProtect')) {
+      const dim = document.createElement('div');
+      dim.id = 'burnInProtect';
+      dim.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999;mix-blend-mode:multiply;opacity:0;transition:opacity 60s;background:rgba(0,0,0,0.15)';
+      document.body.appendChild(dim);
+      // Bật dimmer sau 5 giây
+      setTimeout(() => dim.style.opacity = '1', 5000);
+    }
+  }, 3600000); // Sau 1 giờ
 
   document.getElementById('signalStatus').textContent = '🟢 Đang hoạt động';
   document.getElementById('signalStatus').style.color = 'var(--green)';
